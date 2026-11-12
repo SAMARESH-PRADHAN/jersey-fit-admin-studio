@@ -6,6 +6,7 @@ import {
   useRouter,
   HeadContent,
   Scripts,
+  useRouterState,
   type ErrorComponentProps,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
@@ -120,11 +121,16 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
+  const isAdmin = pathname.startsWith("/admin");
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      {isAdmin ? <Outlet /> : <>
+        <header className="storefront-header"><Link to="/" className="storefront-brand">JERSEY <span>FIT</span></Link><nav><Link to="/">Shop</Link><a href="#collections">Collections</a><Link to="/admin/login">Admin demo</Link></nav></header>
+        <Outlet />
+        <footer className="storefront-footer"><span>JERSEY FIT</span><span>Built for your team. Ready for the game.</span></footer>
+      </>}
     </QueryClientProvider>
   );
 }
