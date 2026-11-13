@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { createFileRoute, Navigate, Outlet } from "@tanstack/react-router";
+import { createFileRoute, Navigate, Outlet, useRouterState } from "@tanstack/react-router";
 import { AdminShell } from "@/components/admin/shared";
 import { AdminProvider } from "@/store/admin";
 import { KEYS } from "@/lib/storage";
@@ -12,7 +12,7 @@ export const Route = createFileRoute("/admin")({
 
 function AdminRouteLayout() {
   const [session, setSession] = useState<boolean | null>(null);
-  const pathname = Route.useRouterState({ select: (state) => state.location.pathname });
+  const pathname = useRouterState({ select: (state) => state.location.pathname });
   useEffect(() => { setSession(Boolean(window.localStorage.getItem(KEYS.session))); }, [pathname]);
   const isLogin = pathname === "/admin/login";
   if (isLogin) return <AdminProvider><Toaster theme="dark" position="top-right" /><Outlet /></AdminProvider>;
