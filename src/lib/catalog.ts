@@ -1,4 +1,4 @@
-import { DEFAULT_DISCOUNT_TIERS, SEED_CATEGORIES, SEED_PRODUCTS } from "@/data/products";
+import { CUSTOM_DESIGN_OPTIONS, DEFAULT_DISCOUNT_TIERS, SEED_CATEGORIES, SEED_PRODUCTS } from "@/data/products";
 import { KEYS, readStored } from "@/lib/storage";
 import type { CategoryRegistryItem, Coupon, PricingConfig, Product, ProductFamily, ShowcaseCustomer } from "@/types";
 
@@ -56,6 +56,10 @@ export function getGstRate(): number {
 
 export function getShowcaseCustomers(): ShowcaseCustomer[] {
   return readStored(KEYS.showcase, []);
+}
+
+export function getCustomDesignOptions() {
+  return readStored(KEYS.customDesignOptions, CUSTOM_DESIGN_OPTIONS);
 }
 
 export function familyForCategory(slug: string): ProductFamily | undefined {

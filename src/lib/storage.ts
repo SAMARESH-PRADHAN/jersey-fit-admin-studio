@@ -7,6 +7,8 @@ export const KEYS = {
   coupons: "jf_admin_coupons",
   settings: "jf_admin_settings",
   showcase: "jf_customer_showcase",
+  customDesignOptions: "jf_admin_custom_design_options",
+  reviews: "jf_admin_reviews",
   session: "jf_admin_session",
   theme: "jf_admin_theme",
 } as const;

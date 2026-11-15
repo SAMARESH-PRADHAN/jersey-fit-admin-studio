@@ -28,3 +28,7 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+## Admin demo data
+
+- Keep admin demo records in the existing localStorage-backed AdminProvider; dedicated admin-only datasets use explicit storage keys so the frontend remains backend-free.

@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState, type FormEvent, type ReactNode } from "react";
-import { Link, useLocation, useNavigate, useRouter } from "@tanstack/react-router";
+import { Link, useLocation, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
-import { Activity, ArrowDown, ArrowDownRight, ArrowUpRight, BarChart3, Bell, Box, Check, ChevronDown, ChevronLeft, ChevronRight, CircleDollarSign, ClipboardList, CloudUpload, CreditCard, Download, Eye, FileSpreadsheet, Filter, Gift, LayoutDashboard, LogOut, Menu, Moon, MoreHorizontal, Package, Pencil, Plus, Search, Settings, ShieldCheck, ShoppingBag, SlidersHorizontal, Sparkles, Sun, Tag, Trash2, TrendingUp, Truck, Users, Wallet, X } from "lucide-react";
+import { Activity, ArrowDown, ArrowDownRight, ArrowUpRight, BarChart3, Box, Check, ChevronDown, ChevronLeft, ChevronRight, CircleDollarSign, ClipboardList, CloudUpload, CreditCard, Download, Eye, FileSpreadsheet, Filter, Gift, LayoutDashboard, LogOut, Menu, Moon, MoreHorizontal, Package, Pencil, Plus, ShieldCheck, ShoppingBag, SlidersHorizontal, Sparkles, Sun, Tag, Trash2, TrendingUp, Truck, Users, Wallet, X } from "lucide-react";
 import { useAdmin } from "@/store/admin";
 import { KEYS, readStored, writeStored } from "@/lib/storage";
 import { Button } from "@/components/ui/button";
@@ -12,23 +12,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import type { CategoryRegistryItem, Order, Product, ProductFamily, ShowcaseCustomer } from "@/types";
 
 const groups: Array<{ title: string; entries: ReadonlyArray<readonly [string, string, typeof LayoutDashboard]> }> = [
   { title: "OVERVIEW", entries: [["Overview", "/admin", LayoutDashboard], ["Analytics", "/admin/analytics", BarChart3]] as const },
-  { title: "CATALOG", entries: [["Products", "/admin/products", Package], ["Categories", "/admin/categories", Box], ["Discounts", "/admin/discounts", Tag], ["MOQ & quantities", "/admin/moq", SlidersHorizontal], ["Print settings", "/admin/print-settings", Sparkles], ["Coupons", "/admin/coupons", Gift]] as const },
+  { title: "CATALOG", entries: [["Products", "/admin/products", Package], ["Custom design", "/admin/custom-design", Sparkles], ["Categories", "/admin/categories", Box], ["Discounts", "/admin/discounts", Tag], ["MOQ & quantities", "/admin/moq", SlidersHorizontal], ["Print settings", "/admin/print-settings", Sparkles], ["Coupons", "/admin/coupons", Gift]] as const },
   { title: "SALES", entries: [["Orders", "/admin/orders", ShoppingBag], ["Order status", "/admin/order-status", Truck], ["Payments", "/admin/payments", CreditCard]] as const },
   { title: "CUSTOMERS", entries: [["Customers", "/admin/customers", Users], ["Our customers", "/admin/our-customers", Eye]] as const },
-  { title: "SETTINGS", entries: [["Store settings", "/admin/settings", Settings]] as const },
+  { title: "SETTINGS", entries: [["Review analysis", "/admin/reviews", Eye]] as const },
 ];
 
 export function AdminShell({ children }: { children: ReactNode }) {
   const location = useLocation();
-  const router = useRouter();
   const navigate = useNavigate();
   const [theme, setTheme] = useState<"dark" | "light">(() => readStored(KEYS.theme, "dark"));
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [search, setSearch] = useState("");
   const signedIn = readStored<{ email?: string } | null>(KEYS.session, null);
   const logout = () => { localStorage.removeItem(KEYS.session); toast.success("Signed out"); void navigate({ to: "/admin/login" }); };
   const toggleTheme = () => { const next = theme === "dark" ? "light" : "dark"; setTheme(next); writeStored(KEYS.theme, next); };
@@ -68,10 +67,9 @@ export function AdminShell({ children }: { children: ReactNode }) {
           <Button variant="outline" size="icon" className="size-9 lg:hidden" aria-label="Open navigation" onClick={() => setMobileOpen(true)}><Menu className="size-4" /></Button>
           <Button variant="ghost" size="icon" className="hidden size-9 lg:inline-flex" aria-label="Toggle compact navigation" onClick={(event) => { const aside = event.currentTarget.closest(".admin-frame")?.querySelector(".admin-sidebar"); aside?.classList.toggle("admin-sidebar-compact"); }}><ChevronLeft className="size-4" /></Button>
           <div className="hidden items-center gap-2 text-xs text-muted-foreground sm:flex"><span>Jersey Fit</span><ChevronRight className="size-3" /><span className="font-semibold text-foreground">{pageTitle}</span></div>
-          <div className="relative ml-auto w-full max-w-[320px]"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input className="h-9 border-border/70 bg-background/70 pl-9 text-xs" placeholder="Search products, orders, customers…" value={search} onChange={(event) => setSearch(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter" && search.trim()) { toast.info(`Searching Jersey Fit for “${search.trim()}”`); void router.navigate({ to: "/admin/products" }); } }} /></div>
-          <Button variant="ghost" size="icon" className="relative hidden size-9 sm:inline-flex" aria-label="Notifications" onClick={() => toast.info("You’re all caught up") }><Bell className="size-4" /><span className="absolute right-2 top-2 size-1.5 rounded-full bg-admin-orange" /></Button>
+          <div className="ml-auto" />
           <Button variant="ghost" size="icon" className="size-9" aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} theme`} onClick={toggleTheme}><motion.span key={theme} initial={{ rotate: -70, opacity: 0 }} animate={{ rotate: 0, opacity: 1 }}><>{theme === "dark" ? <Sun className="size-4" /> : <Moon className="size-4" />}</></motion.span></Button>
-          <button onClick={() => toast.info(signedIn?.email ?? "Admin profile")} className="flex size-9 items-center justify-center rounded-full bg-admin-gradient text-xs font-bold text-primary-foreground" aria-label="Admin profile">JF</button>
+          <DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" className="size-9 rounded-full bg-admin-gradient p-0 text-xs font-bold text-primary-foreground" aria-label="Admin profile">JF</Button></DropdownMenuTrigger><DropdownMenuContent align="end" className="admin-dialog"><div className="px-2 py-1.5"><p className="text-xs font-semibold">Store administrator</p><p className="text-xs text-muted-foreground">{signedIn?.email ?? "Admin"}</p></div><DropdownMenuSeparator /><DropdownMenuItem onClick={() => toast.info(signedIn?.email ?? "Admin profile")}>Profile</DropdownMenuItem><DropdownMenuItem onClick={logout}><LogOut className="mr-2 size-4" />Sign out</DropdownMenuItem></DropdownMenuContent></DropdownMenu>
         </header>
         <div className="mx-auto w-full max-w-[1480px] px-4 pb-12 pt-6 sm:px-6 lg:px-8">
           <motion.div key={location.pathname} initial={{ opacity: 0, y: 9 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.22, ease: "easeOut" }}>{children}</motion.div>
@@ -102,13 +100,21 @@ export function EmptyState({ title, detail, action }: { title: string; detail: s
   return <div className="flex min-h-56 flex-col items-center justify-center px-5 py-12 text-center"><div className="mb-4 flex size-12 items-center justify-center rounded-2xl bg-admin-blue/10 text-admin-blue"><Package className="size-5" /></div><h3 className="font-semibold">{title}</h3><p className="mt-1 max-w-sm text-sm text-muted-foreground">{detail}</p>{action && <div className="mt-5">{action}</div>}</div>;
 }
 
-export function DataTable<T>({ columns, rows, searchText, onRowClick, emptyTitle = "No matching records", emptyDetail = "Try changing the filters or search terms." }: { columns: Array<{ key: string; label: string; render: (row: T) => ReactNode; hide?: boolean }>; rows: T[]; searchText?: string; onRowClick?: (row: T) => void; emptyTitle?: string; emptyDetail?: string }) {
+export function DataTable<T>({ columns, rows, allRows = rows, searchText, onRowClick, emptyTitle = "No matching records", emptyDetail = "Try changing the filters or search terms." }: { columns: Array<{ key: string; label: string; render: (row: T) => ReactNode; hide?: boolean; csvValue?: (row: T) => string | number | boolean | undefined }>; rows: T[]; allRows?: T[]; searchText?: string; onRowClick?: (row: T) => void; emptyTitle?: string; emptyDetail?: string }) {
   const [page, setPage] = useState(0);
   const pageSize = 8;
   const shown = useMemo(() => rows.slice(page * pageSize, (page + 1) * pageSize), [page, rows]);
-  const exportCsv = () => { const csv = [columns.map((column) => column.label).join(","), ...rows.map((row) => columns.map((column) => JSON.stringify(String(column.render(row) ?? "").replace(/<[^>]*>/g, ""))).join(","))].join("\n"); const url = URL.createObjectURL(new Blob([csv], { type: "text/csv" })); const anchor = document.createElement("a"); anchor.href = url; anchor.download = "jersey-fit-export.csv"; anchor.click(); URL.revokeObjectURL(url); toast.success("CSV exported"); };
+  const exportCsv = (records: T[], scope: "filtered" | "all") => {
+    const csvCell = (value: unknown) => `"${String(value ?? "").replaceAll('"', '""')}"`;
+    const csv = [columns.filter((column) => !column.hide).map((column) => csvCell(column.label)).join(","), ...records.map((row) => columns.filter((column) => !column.hide).map((column) => {
+      const record = row as Record<string, unknown>;
+      const value = column.csvValue?.(row) ?? record[column.key] ?? record[column.label.toLowerCase().replaceAll(" ", "")] ?? "";
+      return csvCell(typeof value === "object" ? JSON.stringify(value) : value);
+    }).join(","))].join("\r\n");
+    const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" })); const anchor = document.createElement("a"); anchor.href = url; anchor.download = `jersey-fit-${scope}-export.csv`; anchor.click(); URL.revokeObjectURL(url); toast.success(`${scope === "all" ? "All" : "Filtered"} data exported`);
+  };
   useEffect(() => setPage(0), [searchText]);
-  return <div className="overflow-hidden rounded-xl border border-border/75 bg-card/75"><div className="flex items-center justify-between border-b border-border/70 px-4 py-3"><p className="text-xs text-muted-foreground">{rows.length} records</p><Button variant="ghost" size="sm" onClick={exportCsv}><Download className="mr-2 size-3.5" />Export CSV</Button></div>{rows.length === 0 ? <EmptyState title={emptyTitle} detail={emptyDetail} /> : <><Table><TableHeader><TableRow>{columns.filter((column) => !column.hide).map((column) => <TableHead key={column.key} className="whitespace-nowrap text-[11px] uppercase tracking-wider">{column.label}</TableHead>)}</TableRow></TableHeader><TableBody>{shown.map((row, index) => <TableRow key={index} className={onRowClick ? "cursor-pointer" : ""} onClick={() => onRowClick?.(row)}>{columns.filter((column) => !column.hide).map((column) => <TableCell key={column.key} className="whitespace-nowrap py-3">{column.render(row)}</TableCell>)}</TableRow>)}</TableBody></Table><div className="flex items-center justify-between border-t border-border/70 px-4 py-3"><span className="text-xs text-muted-foreground">Page {page + 1} of {Math.max(1, Math.ceil(rows.length / pageSize))}</span><div className="flex gap-1"><Button variant="outline" size="icon" className="size-8" aria-label="Previous page" disabled={page === 0} onClick={() => setPage((current) => Math.max(0, current - 1))}><ChevronLeft className="size-4" /></Button><Button variant="outline" size="icon" className="size-8" aria-label="Next page" disabled={(page + 1) * pageSize >= rows.length} onClick={() => setPage((current) => current + 1)}><ChevronRight className="size-4" /></Button></div></div></>}</div>;
+  return <div className="overflow-hidden rounded-xl border border-border/75 bg-card/75"><div className="flex items-center justify-between border-b border-border/70 px-4 py-3"><p className="text-xs text-muted-foreground">{rows.length} records</p><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="sm"><Download className="mr-2 size-3.5" />Download CSV<ChevronDown className="ml-2 size-3.5" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end" className="admin-dialog"><DropdownMenuItem onClick={() => exportCsv(rows, "filtered")}>Export filtered view ({rows.length})</DropdownMenuItem><DropdownMenuItem onClick={() => exportCsv(allRows, "all")}>Export all data ({allRows.length})</DropdownMenuItem></DropdownMenuContent></DropdownMenu></div>{rows.length === 0 ? <EmptyState title={emptyTitle} detail={emptyDetail} /> : <><Table><TableHeader><TableRow>{columns.filter((column) => !column.hide).map((column) => <TableHead key={column.key} className="whitespace-nowrap text-[11px] uppercase tracking-wider">{column.label}</TableHead>)}</TableRow></TableHeader><TableBody>{shown.map((row, index) => <TableRow key={index} className={onRowClick ? "cursor-pointer" : ""} onClick={() => onRowClick?.(row)}>{columns.filter((column) => !column.hide).map((column) => <TableCell key={column.key} className="whitespace-nowrap py-3">{column.render(row)}</TableCell>)}</TableRow>)}</TableBody></Table><div className="flex items-center justify-between border-t border-border/70 px-4 py-3"><span className="text-xs text-muted-foreground">Page {page + 1} of {Math.max(1, Math.ceil(rows.length / pageSize))}</span><div className="flex gap-1"><Button variant="outline" size="icon" className="size-8" aria-label="Previous page" disabled={page === 0} onClick={() => setPage((current) => Math.max(0, current - 1))}><ChevronLeft className="size-4" /></Button><Button variant="outline" size="icon" className="size-8" aria-label="Next page" disabled={(page + 1) * pageSize >= rows.length} onClick={() => setPage((current) => Math.min(Math.max(0, Math.ceil(rows.length / pageSize) - 1), current + 1))}><ChevronRight className="size-4" /></Button></div></div></>}</div>;
 }
 
 export function AdminLogin() {

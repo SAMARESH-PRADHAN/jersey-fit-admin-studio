@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { DEFAULT_DISCOUNT_TIERS, SEED_CATEGORIES, SEED_PRODUCTS } from "@/data/products";
+import { CUSTOM_DESIGN_OPTIONS, DEFAULT_DISCOUNT_TIERS, SEED_CATEGORIES, SEED_PRODUCTS } from "@/data/products";
 import { KEYS, readStored, removeStored, writeStored } from "@/lib/storage";
-import type { AdminSettings, CategoryRegistryItem, Coupon, Customer, Order, OrderStatus, Payment, Product, ShowcaseCustomer } from "@/types";
+import type { AdminSettings, CategoryRegistryItem, Coupon, CustomDesignOption, Customer, Order, OrderStatus, Payment, Product, ProductReview, ShowcaseCustomer } from "@/types";
 
 const CUSTOMER_NAMES = ["Aarav Sharma", "Ananya Iyer", "Rohan Mehta", "Priya Nair", "Kabir Patel", "Ishita Rao", "Arjun Singh", "Meera Das", "Dev Malhotra", "Zoya Khan", "Aditya Bose", "Kavya Reddy", "Neil Fernandes", "Sana Kapoor", "Vivaan Joshi"];
 const CITIES = ["Mumbai", "Bengaluru", "Pune", "Hyderabad", "Chennai", "Kolkata", "Delhi", "Ahmedabad"];
@@ -14,7 +14,7 @@ export const DEFAULT_SETTINGS: AdminSettings = {
   supportEmail: "hello@jerseyfit.in",
   supportPhone: "+91 98765 43210",
   globalRules: {
-    customisable: { moq: 5, discountTiers: DEFAULT_DISCOUNT_TIERS, printCharges: { logo: 40, name: 30, number: 30 }, printTypes: ["Sublimation Print", "DTF Print", "No Print"], addOnsAllowed: { logo: true, name: true, number: true }, rosterThreshold: 15 },
+    customisable: { moq: 5, discountTiers: DEFAULT_DISCOUNT_TIERS, printCharges: { logo: 40, name: 30, number: 30 }, printChargesByType: { "Sublimation Print": { logo: 40, name: 30, number: 30 }, "DTF Print": { logo: 40, name: 30, number: 30 } }, printTypes: ["Sublimation Print", "DTF Print"], addOnsAllowed: { logo: true, name: true, number: true }, rosterThreshold: 15 },
     readymade: { moq: 1, maxQty: 3 },
   },
   categoryRules: {},
@@ -30,6 +30,8 @@ export interface AdminData {
   coupons: Coupon[];
   settings: AdminSettings;
   showcase: ShowcaseCustomer[];
+  customDesignOptions: CustomDesignOption[];
+  reviews: ProductReview[];
   ready: boolean;
   setProducts: (data: Product[]) => void;
   setCategories: (data: CategoryRegistryItem[]) => void;
@@ -39,6 +41,8 @@ export interface AdminData {
   setCoupons: (data: Coupon[]) => void;
   setSettings: (data: AdminSettings) => void;
   setShowcase: (data: ShowcaseCustomer[]) => void;
+  setCustomDesignOptions: (data: CustomDesignOption[]) => void;
+  setReviews: (data: ProductReview[]) => void;
   updateOrderStatus: (id: string, status: OrderStatus, note?: string) => void;
   resetDemo: () => void;
   restoreBackup: (backup: unknown) => void;
@@ -83,15 +87,19 @@ function makeSeed(now: number) {
     ...(order.balancePaid > 0 ? [{ id: `BAL-${order.id}`, orderId: order.id, customerName: order.customerName, method: order.paymentMethod, mode: order.payMode, amount: order.balancePaid, date: order.updatedAt, status: "Pending" as const, demo: true }] : []),
   ]);
   const coupons: Coupon[] = [
-    { code: "JERSEY100", label: "₹100 off", amount: 100, minimumSubtotal: 0, active: true, startsAt: "2026-01-01", expiresAt: "2027-12-31", usageLimit: null, usageCount: 18 },
-    { code: "FIT200", label: "₹200 off above ₹2,000", amount: 200, minimumSubtotal: 2000, active: true, startsAt: "2026-01-01", expiresAt: "2027-12-31", usageLimit: 100, usageCount: 9 },
-    { code: "SQUAD500", label: "₹500 off above ₹6,000", amount: 500, minimumSubtotal: 6000, active: true, startsAt: "2026-01-01", expiresAt: "2027-12-31", usageLimit: 50, usageCount: 4 },
+    { code: "JERSEY100", label: "₹100 off", amount: 100, discountType: "flat", minimumSubtotal: 0, active: true, startsAt: "2026-01-01", expiresAt: null, usageLimit: null, usageCount: 18 },
+    { code: "FIT200", label: "₹200 off above ₹2,000", amount: 200, discountType: "flat", minimumSubtotal: 2000, active: true, startsAt: "2026-01-01", expiresAt: null, usageLimit: 100, usageCount: 9 },
+    { code: "SQUAD500", label: "₹500 off above ₹6,000", amount: 500, discountType: "flat", minimumSubtotal: 6000, active: true, startsAt: "2026-01-01", expiresAt: null, usageLimit: 50, usageCount: 4 },
   ];
-  return { products: SEED_PRODUCTS, categories: SEED_CATEGORIES, customers, orders, payments, coupons, settings: DEFAULT_SETTINGS, showcase: [] as ShowcaseCustomer[] };
+  const reviews: ProductReview[] = SEED_PRODUCTS.slice(0, 8).map((product, index) => {
+    const rating = [5, 4, 5, 3, 5, 4, 2, 5][index] ?? 5;
+    return { id: `review-${index + 1}`, productId: product.id, productName: product.name, customerName: CUSTOMER_NAMES[(index + 3) % CUSTOMER_NAMES.length] ?? "Jersey Fit customer", rating, text: ["Great fit and the print quality held up after washing.", "Comfortable material and a clean finish.", "The team loved the colours.", "Good jersey; delivery could be quicker.", "Sizing was accurate for our whole team.", "Lightweight and easy to move in.", "Print alignment needs a closer check.", "Excellent quality for match day."][index] ?? "Good product.", date: new Date(now - (index + 1) * 86400000).toISOString(), status: rating >= 4 ? "Positive" : rating === 3 ? "Neutral" : "Needs attention" };
+  });
+  return { products: SEED_PRODUCTS, categories: SEED_CATEGORIES, customers, orders, payments, coupons, settings: DEFAULT_SETTINGS, showcase: [] as ShowcaseCustomer[], customDesignOptions: CUSTOM_DESIGN_OPTIONS, reviews };
 }
 
 const AdminContext = createContext<AdminData | null>(null);
-const KEYS_TO_DATA = [KEYS.products, KEYS.categories, KEYS.customers, KEYS.orders, KEYS.payments, KEYS.coupons, KEYS.settings, KEYS.showcase] as const;
+const KEYS_TO_DATA = [KEYS.products, KEYS.categories, KEYS.customers, KEYS.orders, KEYS.payments, KEYS.coupons, KEYS.settings, KEYS.showcase, KEYS.customDesignOptions, KEYS.reviews] as const;
 
 export function AdminProvider({ children }: { children: ReactNode }) {
   const [products, setProductsState] = useState(SEED_PRODUCTS);
@@ -102,6 +110,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const [coupons, setCouponsState] = useState<Coupon[]>([]);
   const [settings, setSettingsState] = useState(DEFAULT_SETTINGS);
   const [showcase, setShowcaseState] = useState<ShowcaseCustomer[]>([]);
+  const [customDesignOptions, setCustomDesignOptionsState] = useState(CUSTOM_DESIGN_OPTIONS);
+  const [reviews, setReviewsState] = useState<ProductReview[]>([]);
   const [ready, setReady] = useState(false);
 
   const loadOrSeed = useCallback(() => {
@@ -114,15 +124,32 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     const couponData = readStored(KEYS.coupons, seed.coupons);
     const settingsData = readStored(KEYS.settings, seed.settings);
     const showcaseData = readStored(KEYS.showcase, seed.showcase);
+    const designData = readStored(KEYS.customDesignOptions, seed.customDesignOptions);
+    const reviewData = readStored(KEYS.reviews, seed.reviews);
     if (typeof window !== "undefined") {
       if (window.localStorage.getItem(KEYS.products) === null) {
         // SWAP POINT: replace with API call.
-        for (const [key, value] of [[KEYS.products, productData], [KEYS.categories, categoryData], [KEYS.customers, customerData], [KEYS.orders, orderData], [KEYS.payments, paymentData], [KEYS.coupons, couponData], [KEYS.settings, settingsData], [KEYS.showcase, showcaseData]] as const) writeStored(key, value);
+        for (const [key, value] of [[KEYS.products, productData], [KEYS.categories, categoryData], [KEYS.customers, customerData], [KEYS.orders, orderData], [KEYS.payments, paymentData], [KEYS.coupons, couponData], [KEYS.settings, settingsData], [KEYS.showcase, showcaseData], [KEYS.customDesignOptions, designData], [KEYS.reviews, reviewData]] as const) writeStored(key, value);
       }
     }
-    setProductsState(productData); setCategoriesState(categoryData); setCustomersState(customerData);
+    const safeCategories = categoryData.length === 4 ? categoryData : seed.categories;
+    const normalizedProducts = productData.filter((product) => product.section !== "Custom Your Design").map((product) => {
+      const normalized = { ...product, overview: product.overview ?? "", washCare: product.washCare ?? "", designGuidelines: product.designGuidelines ?? "", active: product.active ?? true };
+      if (normalized.section === "Custom Team Jersey" && normalized.category !== "custom-team-jersey") {
+        return { ...normalized, category: "custom-team-jersey", subCategory: normalized.subCategory ?? product.category };
+      }
+      return normalized;
+    });
+    if (typeof window !== "undefined") {
+      // SWAP POINT: replace with API call.
+      writeStored(KEYS.products, normalizedProducts);
+      writeStored(KEYS.categories, safeCategories);
+      writeStored(KEYS.customDesignOptions, designData);
+      writeStored(KEYS.reviews, reviewData);
+    }
+    setProductsState(normalizedProducts); setCategoriesState(safeCategories); setCustomersState(customerData);
     setOrdersState(orderData); setPaymentsState(paymentData); setCouponsState(couponData);
-    setSettingsState({ ...DEFAULT_SETTINGS, ...settingsData }); setShowcaseState(showcaseData); setReady(true);
+    setSettingsState({ ...DEFAULT_SETTINGS, ...settingsData }); setShowcaseState(showcaseData); setCustomDesignOptionsState(designData); setReviewsState(reviewData); setReady(true);
   }, []);
 
   useEffect(() => { loadOrSeed(); }, [loadOrSeed]);
@@ -135,6 +162,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   const setCoupons = useCallback((data: Coupon[]) => update(KEYS.coupons, setCouponsState, data), [update]);
   const setSettings = useCallback((data: AdminSettings) => update(KEYS.settings, setSettingsState, data), [update]);
   const setShowcase = useCallback((data: ShowcaseCustomer[]) => update(KEYS.showcase, setShowcaseState, data), [update]);
+  const setCustomDesignOptions = useCallback((data: CustomDesignOption[]) => update(KEYS.customDesignOptions, setCustomDesignOptionsState, data), [update]);
+  const setReviews = useCallback((data: ProductReview[]) => update(KEYS.reviews, setReviewsState, data), [update]);
   const updateOrderStatus = useCallback((id: string, status: OrderStatus, note?: string) => {
     const now = new Date().toISOString();
     const next = orders.map((order) => order.id === id ? { ...order, status, statusIndex: STATUSES.indexOf(status), updatedAt: now, statusHistory: [...order.statusHistory, { status, date: now, ...(note ? { note } : {}) }] } : order);
@@ -154,9 +183,11 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     if (Array.isArray(data.coupons)) setCoupons(data.coupons as Coupon[]);
     if (data.settings && typeof data.settings === "object") setSettings(data.settings as AdminSettings);
     if (Array.isArray(data.showcase)) setShowcase(data.showcase as ShowcaseCustomer[]);
-  }, [setCategories, setCoupons, setCustomers, setOrders, setPayments, setProducts, setSettings, setShowcase]);
+    if (Array.isArray(data.customDesignOptions)) setCustomDesignOptions(data.customDesignOptions as CustomDesignOption[]);
+    if (Array.isArray(data.reviews)) setReviews(data.reviews as ProductReview[]);
+  }, [setCategories, setCoupons, setCustomers, setOrders, setPayments, setProducts, setSettings, setShowcase, setCustomDesignOptions, setReviews]);
 
-  const value = useMemo<AdminData>(() => ({ products, categories, customers, orders, payments, coupons, settings, showcase, ready, setProducts, setCategories, setOrders, setCustomers, setPayments, setCoupons, setSettings, setShowcase, updateOrderStatus, resetDemo, restoreBackup }), [products, categories, customers, orders, payments, coupons, settings, showcase, ready, setProducts, setCategories, setOrders, setCustomers, setPayments, setCoupons, setSettings, setShowcase, updateOrderStatus, resetDemo, restoreBackup]);
+  const value = useMemo<AdminData>(() => ({ products, categories, customers, orders, payments, coupons, settings, showcase, customDesignOptions, reviews, ready, setProducts, setCategories, setOrders, setCustomers, setPayments, setCoupons, setSettings, setShowcase, setCustomDesignOptions, setReviews, updateOrderStatus, resetDemo, restoreBackup }), [products, categories, customers, orders, payments, coupons, settings, showcase, customDesignOptions, reviews, ready, setProducts, setCategories, setOrders, setCustomers, setPayments, setCoupons, setSettings, setShowcase, setCustomDesignOptions, setReviews, updateOrderStatus, resetDemo, restoreBackup]);
   return <AdminContext.Provider value={value}>{children}</AdminContext.Provider>;
 }
 

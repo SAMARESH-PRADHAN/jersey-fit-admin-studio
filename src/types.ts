@@ -18,10 +18,14 @@ export interface Product {
   mrp: number;
   material: string;
   description: string;
+  overview: string;
+  washCare: string;
+  designGuidelines: string;
   images: string[];
   rating: number;
   tag?: string;
   isExclusiveTopWear: boolean;
+  active: boolean;
   demo?: boolean;
 }
 
@@ -33,7 +37,7 @@ export interface CategoryRegistryItem {
   family: ProductFamily;
   type: "custom" | "premium" | "readymade" | "custom-tshirt";
   section: ProductSection;
-  subcategories: Array<{ slug: string; label: string }>;
+  subcategories: Array<{ slug: string; label: string; description?: string; image?: string }>;
 }
 
 export interface DiscountTier {
@@ -48,6 +52,8 @@ export interface PricingConfig {
   maxQty: number | null;
   discountTiers: DiscountTier[];
   printCharges: { logo: number; name: number; number: number };
+  printChargesByType?: Partial<Record<"Sublimation Print" | "DTF Print", { logo: number; name: number; number: number }>>;
+  printDescriptionsByType?: Partial<Record<"Sublimation Print" | "DTF Print", { logo: string; name: string; number: string }>>;
   printTypes: string[];
   addOnsAllowed: { logo: boolean; name: boolean; number: boolean };
   rosterThreshold: number;
@@ -58,6 +64,8 @@ export interface RuleOverrides {
   maxQty?: number | null;
   discountTiers?: DiscountTier[];
   printCharges?: PricingConfig["printCharges"];
+  printChargesByType?: PricingConfig["printChargesByType"];
+  printDescriptionsByType?: PricingConfig["printDescriptionsByType"];
   printTypes?: string[];
   addOnsAllowed?: PricingConfig["addOnsAllowed"];
   rosterThreshold?: number;
@@ -67,12 +75,31 @@ export interface Coupon {
   code: string;
   label: string;
   amount: number;
+  discountType: "flat" | "percentage";
   minimumSubtotal: number;
   active: boolean;
   startsAt: string;
-  expiresAt: string;
+  expiresAt: string | null;
   usageLimit: number | null;
   usageCount: number;
+}
+
+export interface CustomDesignOption {
+  id: string;
+  name: string;
+  price: number;
+  description: string;
+}
+
+export interface ProductReview {
+  id: string;
+  productId: string;
+  productName: string;
+  customerName: string;
+  rating: number;
+  text: string;
+  date: string;
+  status: "Positive" | "Neutral" | "Needs attention";
 }
 
 export type OrderStatus = "Placed" | "Packed" | "Shipped" | "Out for Delivery" | "Delivered";
