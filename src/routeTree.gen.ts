@@ -15,6 +15,7 @@ import { Route as AdminIndexRouteImport } from './routes/admin.index'
 import { Route as AdminAnalyticsRouteImport } from './routes/admin.analytics'
 import { Route as AdminCategoriesRouteImport } from './routes/admin.categories'
 import { Route as AdminCouponsRouteImport } from './routes/admin.coupons'
+import { Route as AdminCustomDesignRouteImport } from './routes/admin.custom-design'
 import { Route as AdminCustomersRouteImport } from './routes/admin.customers'
 import { Route as AdminDiscountsRouteImport } from './routes/admin.discounts'
 import { Route as AdminLoginRouteImport } from './routes/admin.login'
@@ -25,6 +26,7 @@ import { Route as AdminOurCustomersRouteImport } from './routes/admin.our-custom
 import { Route as AdminPaymentsRouteImport } from './routes/admin.payments'
 import { Route as AdminPrintSettingsRouteImport } from './routes/admin.print-settings'
 import { Route as AdminProductsRouteImport } from './routes/admin.products'
+import { Route as AdminReviewsRouteImport } from './routes/admin.reviews'
 import { Route as AdminSettingsRouteImport } from './routes/admin.settings'
 import { Route as AdminCustomersCustomerIdRouteImport } from './routes/admin.customers_.$customerId'
 import { Route as AdminOrdersOrderIdRouteImport } from './routes/admin.orders_.$orderId'
@@ -59,6 +61,11 @@ const AdminCategoriesRoute = AdminCategoriesRouteImport.update({
 const AdminCouponsRoute = AdminCouponsRouteImport.update({
   id: '/coupons',
   path: '/coupons',
+  getParentRoute: () => AdminRoute,
+} as any)
+const AdminCustomDesignRoute = AdminCustomDesignRouteImport.update({
+  id: '/custom-design',
+  path: '/custom-design',
   getParentRoute: () => AdminRoute,
 } as any)
 const AdminCustomersRoute = AdminCustomersRouteImport.update({
@@ -111,6 +118,11 @@ const AdminProductsRoute = AdminProductsRouteImport.update({
   path: '/products',
   getParentRoute: () => AdminRoute,
 } as any)
+const AdminReviewsRoute = AdminReviewsRouteImport.update({
+  id: '/reviews',
+  path: '/reviews',
+  getParentRoute: () => AdminRoute,
+} as any)
 const AdminSettingsRoute = AdminSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -144,6 +156,7 @@ export interface FileRoutesByFullPath {
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/coupons': typeof AdminCouponsRoute
+  '/admin/custom-design': typeof AdminCustomDesignRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/discounts': typeof AdminDiscountsRoute
   '/admin/login': typeof AdminLoginRoute
@@ -154,6 +167,7 @@ export interface FileRoutesByFullPath {
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/print-settings': typeof AdminPrintSettingsRoute
   '/admin/products': typeof AdminProductsRoute
+  '/admin/reviews': typeof AdminReviewsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/customers/$customerId': typeof AdminCustomersCustomerIdRoute
@@ -166,6 +180,7 @@ export interface FileRoutesByTo {
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/coupons': typeof AdminCouponsRoute
+  '/admin/custom-design': typeof AdminCustomDesignRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/discounts': typeof AdminDiscountsRoute
   '/admin/login': typeof AdminLoginRoute
@@ -176,6 +191,7 @@ export interface FileRoutesByTo {
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/print-settings': typeof AdminPrintSettingsRoute
   '/admin/products': typeof AdminProductsRoute
+  '/admin/reviews': typeof AdminReviewsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin': typeof AdminIndexRoute
   '/admin/customers/$customerId': typeof AdminCustomersCustomerIdRoute
@@ -190,6 +206,7 @@ export interface FileRoutesById {
   '/admin/analytics': typeof AdminAnalyticsRoute
   '/admin/categories': typeof AdminCategoriesRoute
   '/admin/coupons': typeof AdminCouponsRoute
+  '/admin/custom-design': typeof AdminCustomDesignRoute
   '/admin/customers': typeof AdminCustomersRoute
   '/admin/discounts': typeof AdminDiscountsRoute
   '/admin/login': typeof AdminLoginRoute
@@ -200,6 +217,7 @@ export interface FileRoutesById {
   '/admin/payments': typeof AdminPaymentsRoute
   '/admin/print-settings': typeof AdminPrintSettingsRoute
   '/admin/products': typeof AdminProductsRoute
+  '/admin/reviews': typeof AdminReviewsRoute
   '/admin/settings': typeof AdminSettingsRoute
   '/admin/': typeof AdminIndexRoute
   '/admin/customers_/$customerId': typeof AdminCustomersCustomerIdRoute
@@ -215,6 +233,7 @@ export interface FileRouteTypes {
     | '/admin/analytics'
     | '/admin/categories'
     | '/admin/coupons'
+    | '/admin/custom-design'
     | '/admin/customers'
     | '/admin/discounts'
     | '/admin/login'
@@ -225,6 +244,7 @@ export interface FileRouteTypes {
     | '/admin/payments'
     | '/admin/print-settings'
     | '/admin/products'
+    | '/admin/reviews'
     | '/admin/settings'
     | '/admin/'
     | '/admin/customers/$customerId'
@@ -237,6 +257,7 @@ export interface FileRouteTypes {
     | '/admin/analytics'
     | '/admin/categories'
     | '/admin/coupons'
+    | '/admin/custom-design'
     | '/admin/customers'
     | '/admin/discounts'
     | '/admin/login'
@@ -247,6 +268,7 @@ export interface FileRouteTypes {
     | '/admin/payments'
     | '/admin/print-settings'
     | '/admin/products'
+    | '/admin/reviews'
     | '/admin/settings'
     | '/admin'
     | '/admin/customers/$customerId'
@@ -260,6 +282,7 @@ export interface FileRouteTypes {
     | '/admin/analytics'
     | '/admin/categories'
     | '/admin/coupons'
+    | '/admin/custom-design'
     | '/admin/customers'
     | '/admin/discounts'
     | '/admin/login'
@@ -270,6 +293,7 @@ export interface FileRouteTypes {
     | '/admin/payments'
     | '/admin/print-settings'
     | '/admin/products'
+    | '/admin/reviews'
     | '/admin/settings'
     | '/admin/'
     | '/admin/customers_/$customerId'
@@ -325,6 +349,13 @@ declare module '@tanstack/react-router' {
       path: '/coupons'
       fullPath: '/admin/coupons'
       preLoaderRoute: typeof AdminCouponsRouteImport
+      parentRoute: typeof AdminRoute
+    }
+    '/admin/custom-design': {
+      id: '/admin/custom-design'
+      path: '/custom-design'
+      fullPath: '/admin/custom-design'
+      preLoaderRoute: typeof AdminCustomDesignRouteImport
       parentRoute: typeof AdminRoute
     }
     '/admin/customers': {
@@ -397,6 +428,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminProductsRouteImport
       parentRoute: typeof AdminRoute
     }
+    '/admin/reviews': {
+      id: '/admin/reviews'
+      path: '/reviews'
+      fullPath: '/admin/reviews'
+      preLoaderRoute: typeof AdminReviewsRouteImport
+      parentRoute: typeof AdminRoute
+    }
     '/admin/settings': {
       id: '/admin/settings'
       path: '/settings'
@@ -439,6 +477,7 @@ interface AdminRouteChildren {
   AdminAnalyticsRoute: typeof AdminAnalyticsRoute
   AdminCategoriesRoute: typeof AdminCategoriesRoute
   AdminCouponsRoute: typeof AdminCouponsRoute
+  AdminCustomDesignRoute: typeof AdminCustomDesignRoute
   AdminCustomersRoute: typeof AdminCustomersRoute
   AdminDiscountsRoute: typeof AdminDiscountsRoute
   AdminLoginRoute: typeof AdminLoginRoute
@@ -449,6 +488,7 @@ interface AdminRouteChildren {
   AdminPaymentsRoute: typeof AdminPaymentsRoute
   AdminPrintSettingsRoute: typeof AdminPrintSettingsRoute
   AdminProductsRoute: typeof AdminProductsRoute
+  AdminReviewsRoute: typeof AdminReviewsRoute
   AdminSettingsRoute: typeof AdminSettingsRoute
   AdminIndexRoute: typeof AdminIndexRoute
   AdminCustomersCustomerIdRoute: typeof AdminCustomersCustomerIdRoute
@@ -461,6 +501,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminAnalyticsRoute: AdminAnalyticsRoute,
   AdminCategoriesRoute: AdminCategoriesRoute,
   AdminCouponsRoute: AdminCouponsRoute,
+  AdminCustomDesignRoute: AdminCustomDesignRoute,
   AdminCustomersRoute: AdminCustomersRoute,
   AdminDiscountsRoute: AdminDiscountsRoute,
   AdminLoginRoute: AdminLoginRoute,
@@ -471,6 +512,7 @@ const AdminRouteChildren: AdminRouteChildren = {
   AdminPaymentsRoute: AdminPaymentsRoute,
   AdminPrintSettingsRoute: AdminPrintSettingsRoute,
   AdminProductsRoute: AdminProductsRoute,
+  AdminReviewsRoute: AdminReviewsRoute,
   AdminSettingsRoute: AdminSettingsRoute,
   AdminIndexRoute: AdminIndexRoute,
   AdminCustomersCustomerIdRoute: AdminCustomersCustomerIdRoute,
