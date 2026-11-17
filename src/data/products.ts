@@ -90,7 +90,7 @@ const seedRows: Array<[string, string, string, string | undefined, number, numbe
 
 export const SEED_PRODUCTS: Product[] = seedRows.map((row, index) => {
   const section = row[2] as Product["section"];
-  const family = section === "Sports Top Wear" || section === "Winter Sports Wear" ? "readymade" : "customisable";
+  const family: Product["family"] = section === "Sports Top Wear" || section === "Winter Sports Wear" ? "readymade" : "customisable";
   const category = row[3] ?? "custom-premium";
   const subCategory = section === "Sports Top Wear" ? (index === 10 ? "polo-neck" : "round-neck")
     : section === "Winter Sports Wear" ? ["hoodie", "sweatshirt", "oversized-tshirt"][index - 11]

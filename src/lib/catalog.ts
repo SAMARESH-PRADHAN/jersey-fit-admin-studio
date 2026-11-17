@@ -44,9 +44,9 @@ export function resolvePricingConfig(product: Pick<Product, "family" | "category
 
 export function getCoupons(): Coupon[] {
   return readStored(KEYS.coupons, [
-    { code: "JERSEY100", label: "Save ₹100", amount: 100, minimumSubtotal: 0, active: true, startsAt: "2026-01-01", expiresAt: "2027-12-31", usageLimit: null, usageCount: 0 },
-    { code: "FIT200", label: "₹200 off above ₹2,000", amount: 200, minimumSubtotal: 2000, active: true, startsAt: "2026-01-01", expiresAt: "2027-12-31", usageLimit: null, usageCount: 0 },
-    { code: "SQUAD500", label: "₹500 off above ₹6,000", amount: 500, minimumSubtotal: 6000, active: true, startsAt: "2026-01-01", expiresAt: "2027-12-31", usageLimit: null, usageCount: 0 },
+    { code: "JERSEY100", label: "Save ₹100", amount: 100, discountType: "flat", minimumSubtotal: 0, active: true, startsAt: "2026-01-01", expiresAt: "2027-12-31", usageLimit: null, usageCount: 0 },
+    { code: "FIT200", label: "₹200 off above ₹2,000", amount: 200, discountType: "flat", minimumSubtotal: 2000, active: true, startsAt: "2026-01-01", expiresAt: "2027-12-31", usageLimit: null, usageCount: 0 },
+    { code: "SQUAD500", label: "₹500 off above ₹6,000", amount: 500, discountType: "flat", minimumSubtotal: 6000, active: true, startsAt: "2026-01-01", expiresAt: "2027-12-31", usageLimit: null, usageCount: 0 },
   ]);
 }
 
