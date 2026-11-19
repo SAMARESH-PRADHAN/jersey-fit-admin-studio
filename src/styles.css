@@ -259,7 +259,12 @@ body { font-family: var(--font-body); }
 .shadow-admin-glow { box-shadow: var(--admin-glow); }
 .bg-admin-gradient { background: var(--admin-gradient); }
 .bg-admin-login-panel { background: linear-gradient(145deg, oklch(0.19 0.06 252), oklch(0.16 0.04 245) 55%, oklch(0.23 0.06 38)); }
-.admin-dialog { background: var(--card); color: var(--foreground); }
+/* .admin-dialog { background: var(--card); color: var(--foreground); } */
+.admin-dialog {
+  background: var(--card);
+  color: var(--foreground);
+  border-color: var(--border);
+}
 .admin-login-bg { background: radial-gradient(ellipse at 18% 10%, oklch(0.34 0.1 247 / 35%), transparent 45%), radial-gradient(ellipse at 82% 85%, oklch(0.34 0.11 42 / 20%), var(--background) 55%); }
 .admin-sidebar-compact { width: 76px !important; }
 .admin-sidebar-compact > div:first-child > div:nth-child(2) { display: none; }
