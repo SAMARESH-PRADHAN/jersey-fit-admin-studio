@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -27,7 +27,12 @@ const groups: Array<{ title: string; entries: ReadonlyArray<readonly [string, st
 export function AdminShell({ children }: { children: ReactNode }) {
   const location = useLocation();
   const navigate = useNavigate();
-  const [theme, setTheme] = useState<"dark" | "light">(() => readStored(KEYS.theme, "dark"));
+  const [theme, setTheme] = useState<"dark" | "light">(() => readStored(KEYS.theme, "dark"));useEffect(() => {
+  const root = document.documentElement;
+  root.classList.toggle("dark", theme === "dark");
+  root.classList.toggle("admin-dark", theme === "dark");
+  root.classList.toggle("admin-light", theme === "light");
+}, [theme]);
   const [mobileOpen, setMobileOpen] = useState(false);
   const signedIn = readStored<{ email?: string } | null>(KEYS.session, null);
   const logout = () => { localStorage.removeItem(KEYS.session); toast.success("Signed out"); void navigate({ to: "/admin/login" }); };
@@ -115,7 +120,21 @@ export function DataTable<T>({ columns, rows, allRows = rows, searchText, onRowC
     const url = URL.createObjectURL(new Blob([`\uFEFF${csv}`], { type: "text/csv;charset=utf-8" })); const anchor = document.createElement("a"); anchor.href = url; anchor.download = `jersey-fit-${scope}-export.csv`; anchor.click(); URL.revokeObjectURL(url); toast.success(`${scope === "all" ? "All" : "Filtered"} data exported`);
   };
   useEffect(() => setPage(0), [searchText]);
-  return <div className="overflow-hidden rounded-xl border border-border/75 bg-card/75"><div className="flex items-center justify-between border-b border-border/70 px-4 py-3"><p className="text-xs text-muted-foreground">{rows.length} records</p><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="sm"><Download className="mr-2 size-3.5" />Download CSV<ChevronDown className="ml-2 size-3.5" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end" className="admin-dialog"><DropdownMenuItem onClick={() => exportCsv(rows, "filtered")}>Export filtered view ({rows.length})</DropdownMenuItem><DropdownMenuItem onClick={() => exportCsv(allRows, "all")}>Export all data ({allRows.length})</DropdownMenuItem></DropdownMenuContent></DropdownMenu></div>{rows.length === 0 ? <EmptyState title={emptyTitle} detail={emptyDetail} /> : <><Table><TableHeader><TableRow>{columns.filter((column) => !column.hide).map((column) => <TableHead key={column.key} className="whitespace-nowrap text-[11px] uppercase tracking-wider">{column.label}</TableHead>)}</TableRow></TableHeader><TableBody>{shown.map((row, index) => <TableRow key={index} className={onRowClick ? "cursor-pointer" : ""} onClick={() => onRowClick?.(row)}>{columns.filter((column) => !column.hide).map((column) => <TableCell key={column.key} className="whitespace-nowrap py-3">{column.render(row)}</TableCell>)}</TableRow>)}</TableBody></Table><div className="flex items-center justify-between border-t border-border/70 px-4 py-3"><span className="text-xs text-muted-foreground">Page {page + 1} of {Math.max(1, Math.ceil(rows.length / pageSize))}</span><div className="flex gap-1"><Button variant="outline" size="icon" className="size-8" aria-label="Previous page" disabled={page === 0} onClick={() => setPage((current) => Math.max(0, current - 1))}><ChevronLeft className="size-4" /></Button><Button variant="outline" size="icon" className="size-8" aria-label="Next page" disabled={(page + 1) * pageSize >= rows.length} onClick={() => setPage((current) => Math.min(Math.max(0, Math.ceil(rows.length / pageSize) - 1), current + 1))}><ChevronRight className="size-4" /></Button></div></div></>}</div>;
+  return <div className="overflow-hidden rounded-xl border border-border/75 bg-card/75"><div className="flex items-center justify-between border-b border-border/70 px-4 py-3"><p className="text-xs text-muted-foreground">{rows.length} records</p><DropdownMenu><DropdownMenuTrigger asChild><Button variant="ghost" size="sm"><Download className="mr-2 size-3.5" />Download CSV<ChevronDown className="ml-2 size-3.5" /></Button></DropdownMenuTrigger><DropdownMenuContent align="end" className="admin-dialog"><DropdownMenuItem onClick={() => exportCsv(rows, "filtered")}>Export filtered view ({rows.length})</DropdownMenuItem><DropdownMenuItem onClick={() => exportCsv(allRows, "all")}>Export all data ({allRows.length})</DropdownMenuItem></DropdownMenuContent></DropdownMenu></div>{rows.length === 0 ? <EmptyState title={emptyTitle} detail={emptyDetail} /> : <><Table><TableHeader><TableRow>{columns.filter((column) => !column.hide).map((column) => <TableHead key={column.key} className="whitespace-nowrap text-[11px] uppercase tracking-wider">{column.label}</TableHead>)}</TableRow></TableHeader><TableBody>{shown.map((row, index) => <TableRow key={index} className={onRowClick ? "cursor-pointer" : ""} onClick={(event) => {
+  const target = event.target as HTMLElement;
+
+  // Do not navigate when clicking buttons, links,
+  // or other interactive elements inside the row.
+  if (
+    target.closest(
+      "button, a, [role='button'], [data-row-action='true']"
+    )
+  ) {
+    return;
+  }
+
+  onRowClick?.(row);
+}}>{columns.filter((column) => !column.hide).map((column) => <TableCell key={column.key} className="whitespace-nowrap py-3">{column.render(row)}</TableCell>)}</TableRow>)}</TableBody></Table><div className="flex items-center justify-between border-t border-border/70 px-4 py-3"><span className="text-xs text-muted-foreground">Page {page + 1} of {Math.max(1, Math.ceil(rows.length / pageSize))}</span><div className="flex gap-1"><Button variant="outline" size="icon" className="size-8" aria-label="Previous page" disabled={page === 0} onClick={() => setPage((current) => Math.max(0, current - 1))}><ChevronLeft className="size-4" /></Button><Button variant="outline" size="icon" className="size-8" aria-label="Next page" disabled={(page + 1) * pageSize >= rows.length} onClick={() => setPage((current) => Math.min(Math.max(0, Math.ceil(rows.length / pageSize) - 1), current + 1))}><ChevronRight className="size-4" /></Button></div></div></>}</div>;
 }
 
 export function AdminLogin() {
@@ -191,8 +210,61 @@ export function ShowcaseEditor({ onSave, onClose }: { onSave: (entry: ShowcaseCu
   return <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}><DialogContent className="admin-dialog max-w-xl"><DialogHeader><DialogTitle>Showcase a customer</DialogTitle><DialogDescription>Share a Jersey Fit moment with the community.</DialogDescription></DialogHeader><form onSubmit={(event) => { event.preventDefault(); if (!image || !name.trim() || !location.trim() || !description.trim()) { toast.error("Image, client, location and description are required."); return; } onSave({ id: `showcase-${Date.now()}`, image, name, location, description, ...(category ? { category } : {}), ...(subCategory ? { subCategory } : {}), ...(productId ? { productId } : {}) }); }} className="space-y-4"><Field label="Customer image" required><ImageUpload value={image ? [image] : []} onChange={(items) => setImage(items[0] ?? "")} /></Field><div className="grid gap-4 sm:grid-cols-2"><Field label="Client name" required><Input value={name} onChange={(event) => setName(event.target.value)} required /></Field><Field label="Location" required><Input value={location} onChange={(event) => setLocation(event.target.value)} required placeholder="City, India" /></Field></div><Field label="Description" required><textarea value={description} onChange={(event) => setDescription(event.target.value)} className="min-h-20 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm" required /></Field><div className="grid gap-4 sm:grid-cols-3"><Field label="Category (optional)"><Select value={category || "none"} onValueChange={(value) => { setCategory(value === "none" ? "" : value); setSubCategory(""); setProductId(""); }}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">No category</SelectItem>{categories.map((item) => <SelectItem value={item.slug} key={item.slug}>{item.label}</SelectItem>)}</SelectContent></Select></Field><Field label="Subcategory"><Select value={subCategory || "none"} onValueChange={(value) => { setSubCategory(value === "none" ? "" : value); setProductId(""); }} disabled={!category}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">No subcategory</SelectItem>{subs.map((item) => <SelectItem value={item.slug} key={item.slug}>{item.label}</SelectItem>)}</SelectContent></Select></Field><Field label="Product"><Select value={productId || "none"} onValueChange={(value) => setProductId(value === "none" ? "" : value)}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent><SelectItem value="none">No product</SelectItem>{choices.map((item) => <SelectItem value={item.id} key={item.id}>{item.name}</SelectItem>)}</SelectContent></Select></Field></div><DialogFooter><Button variant="outline" type="button" onClick={onClose}>Cancel</Button><Button type="submit">Add showcase entry</Button></DialogFooter></form></DialogContent></Dialog>;
 }
 
-export function DeleteDialog({ title, onConfirm, children }: { title: string; onConfirm: () => void; children: ReactNode }) {
-  return <Dialog><DialogTrigger asChild>{children}</DialogTrigger><DialogContent className="admin-dialog max-w-md"><DialogHeader><DialogTitle>{title}</DialogTitle><DialogDescription>This cannot be undone. Demo records linked to this entry may remain in history.</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={(event) => event.currentTarget.closest("[data-state]")?.querySelector<HTMLButtonElement>("[data-radix-dialog-close]")?.click()}>Cancel</Button><Button variant="destructive" onClick={onConfirm}><Trash2 className="mr-2 size-4" />Delete</Button></DialogFooter></DialogContent></Dialog>;
+export function DeleteDialog({
+  title,
+  onConfirm,
+  children,
+}: {
+  title: string;
+  onConfirm: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <Dialog>
+      <DialogTrigger asChild>{children}</DialogTrigger>
+
+      <DialogContent
+        className="admin-dialog max-w-md"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <DialogHeader>
+          <DialogTitle>{title}</DialogTitle>
+
+          <DialogDescription>
+            This cannot be undone. Demo records linked to this entry may remain
+            in history.
+          </DialogDescription>
+        </DialogHeader>
+
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={(event) => {
+              event.stopPropagation();
+            }}
+            asChild
+          >
+            <DialogClose>Cancel</DialogClose>
+          </Button>
+
+          <DialogClose asChild>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={(event) => {
+                event.stopPropagation();
+                onConfirm();
+              }}
+            >
+              <Trash2 className="mr-2 size-4" />
+              Delete
+            </Button>
+          </DialogClose>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 export function formatMoney(value: number): string { return `₹${Math.round(value).toLocaleString("en-IN")}`; }
