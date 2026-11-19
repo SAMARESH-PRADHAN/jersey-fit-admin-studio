@@ -19,6 +19,7 @@ import {
 } from "recharts";
 import {
   Activity,
+  ArrowLeft,
   ArrowDownRight,
   ArrowUpRight,
   BarChart3,
@@ -65,7 +66,7 @@ import {
   StatCard,
   StatusBadge,
 } from "@/components/admin/shared";
-import { RuleEditor } from "@/components/admin/rule-editor";
+// import { RuleEditor } from "@/components/admin/rule-editor";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -509,15 +510,28 @@ export function ProductsPage() {
 
   const selectedCategory = categories.find((item) => item.slug === category);
   const subCategoryOptions = selectedCategory?.subcategories ?? [];
+  // const filtered = products.filter(
+  //   (product) =>
+  //     `${product.name} ${product.code} ${product.category} ${product.subCategory ?? ""}`
+  //       .toLowerCase()
+  //       .includes(search.toLowerCase()) &&
+  //     (family === "all" || product.family === family) &&
+  //     (section === "all" || product.section === section) &&
+  //     (category === "all" || product.category === category),
+  // );
   const filtered = products.filter(
-    (product) =>
-      `${product.name} ${product.code} ${product.category} ${product.subCategory ?? ""}`
-        .toLowerCase()
-        .includes(search.toLowerCase()) &&
-      (family === "all" || product.family === family) &&
-      (section === "all" || product.section === section) &&
-      (category === "all" || product.category === category),
-  );
+  (product) =>
+    `${product.name} ${product.code} ${product.category} ${product.subCategory ?? ""}`
+      .toLowerCase()
+      .includes(search.toLowerCase()) &&
+    (family === "all" || product.family === family) &&
+    (section === "all" || product.section === section) &&
+    (category === "all" || product.category === category) &&
+    (subCategory === "all" ||
+      (subCategory === "__none__"
+        ? !product.subCategory
+        : product.subCategory === subCategory)),
+);
   const save = (product: Product) => {
     const exists = products.some((item) => item.id === product.id);
     const next = exists
@@ -780,9 +794,9 @@ export function ProductsPage() {
       )}
       {view === "table" ? (
         <DataTable
-          rows={filtered}
-          searchText={search}
-          columns={columns}
+  rows={filtered}
+  searchText={`${search}|${family}|${category}|${subCategory}`}
+  columns={columns}
           onRowClick={(product) =>
             void navigate({ to: "/admin/products/$productId", params: { productId: product.id } })
           }
@@ -1126,7 +1140,7 @@ export function CategoriesPage() {
 
 export function OrdersPage() {
   const { orders } = useAdmin();
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("all");
   const [family, setFamily] = useState("all");
@@ -1164,9 +1178,9 @@ export function OrdersPage() {
       <DataTable
         rows={filtered}
         searchText={search}
-        onRowClick={(order) =>
-          void navigate({ to: "/admin/orders/$orderId", params: { orderId: order.id } })
-        }
+        // onRowClick={(order) =>
+        //   void navigate({ to: "/admin/orders/$orderId", params: { orderId: order.id } })
+        // }
         columns={[
           {
             key: "id",
@@ -1212,6 +1226,17 @@ export function OrdersPage() {
             label: "Status",
             render: (order) => <StatusBadge status={order.status} />,
           },
+          {
+  key: "actions",
+  label: "Actions",
+  render: (order) => (
+    <Link to="/admin/orders/$orderId" params={{ orderId: order.id }}>
+      <Button variant="ghost" size="icon" className="size-8" aria-label={`View order ${order.id}`}>
+        <Eye className="size-4" />
+      </Button>
+    </Link>
+  ),
+},
         ]}
       />
     </>
@@ -1224,9 +1249,17 @@ export function OrderDetailPage() {
   const order = orders.find((item) => item.id === id);
   const [note, setNote] = useState("");
   if (!order)
-    return (
+  return (
+    <>
       <PageHeader title="Order not found" description="This order is not in the demo record." />
-    );
+      <Link to="/admin/orders">
+        <Button variant="outline">
+          <ArrowLeft className="size-4" />
+          Back to orders
+        </Button>
+      </Link>
+    </>
+  );
   const custom = order.items.some((item) => item.family === "customisable");
   const saveFile = (name: string, data: string) => {
     const anchor = document.createElement("a");
@@ -1291,6 +1324,13 @@ export function OrderDetailPage() {
   };
   return (
     <>
+    <Link
+      to="/admin/orders"
+      className="mb-4 inline-flex items-center gap-2 text-sm font-medium text-muted-foreground hover:text-foreground"
+    >
+      <ArrowLeft className="size-4" />
+      Back to orders
+    </Link>
       <PageHeader
         title={`Order ${order.id}`}
         description={`${order.customerName} · placed ${new Date(order.createdAt).toLocaleString("en-IN")}`}
@@ -2389,270 +2429,270 @@ export function CouponsPage() {
   );
 }
 
-export function RuleEditorPage({ kind }: { kind: "discounts" | "moq" | "print-settings" }) {
-  const { categories, settings, setSettings } = useAdmin();
-  const [selected, setSelected] = useState(
-    categories.find((category) => category.family === "customisable")?.slug ?? "customisable",
-  );
-  const [mode, setMode] = useState("Category");
-  const family =
-    categories.find((category) => category.slug === selected)?.family ?? "customisable";
-  const key =
-    mode === "Global"
-      ? family === "readymade"
-        ? "readymade"
-        : "customisable"
-      : mode === "Subcategory"
-        ? `${selected}:${categories.find((category) => category.slug === selected)?.subcategories[0]?.slug ?? ""}`
-        : selected;
-  const customDisabled = family === "readymade" && kind !== "moq";
-  const title =
-    kind === "print-settings"
-      ? "Print settings"
-      : kind === "moq"
-        ? "MOQ & quantities"
-        : "Volume discounts";
-  const rules =
-    mode === "Global"
-      ? settings.globalRules[family]
-      : mode === "Subcategory"
-        ? settings.subcategoryRules[key]
-        : settings.categoryRules[key];
-  const save = (partial: Partial<AdminSettings["globalRules"]["customisable"]>) => {
-    const next: AdminSettings = {
-      ...settings,
-      globalRules: { ...settings.globalRules },
-      categoryRules: { ...settings.categoryRules },
-      subcategoryRules: { ...settings.subcategoryRules },
-    };
-    if (mode === "Global") next.globalRules[family] = { ...next.globalRules[family], ...partial };
-    else if (mode === "Subcategory")
-      next.subcategoryRules[key] = { ...next.subcategoryRules[key], ...partial };
-    else next.categoryRules[key] = { ...next.categoryRules[key], ...partial };
-    setSettings(next);
-    toast.success(`${title} saved`);
-  };
-  return (
-    <>
-      <PageHeader
-        title={title}
-        description="Settings resolve from subcategory, then category, then family default."
-      />
-      <div className="grid gap-4 lg:grid-cols-[270px_1fr]">
-        <Card className="admin-panel h-fit">
-          <CardHeader>
-            <CardTitle className="text-sm">Category tree</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-1">
-            {categories.map((category) => (
-              <button
-                key={category.slug}
-                onClick={() => {
-                  setSelected(category.slug);
-                  setMode("Category");
-                }}
-                className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs ${selected === category.slug ? "bg-admin-blue/10 text-admin-blue" : "text-muted-foreground hover:bg-muted"}`}
-              >
-                <span className="truncate">{category.label}</span>
-                <FamilyBadge family={category.family} />
-              </button>
-            ))}
-          </CardContent>
-        </Card>
-        <Card className="admin-panel">
-          <CardHeader>
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <CardTitle className="text-base">
-                  {categories.find((category) => category.slug === selected)?.label ??
-                    "Global defaults"}
-                </CardTitle>
-                <p className="mt-1 text-xs text-muted-foreground">
-                  Inherited from{" "}
-                  {mode === "Category"
-                    ? "global defaults"
-                    : mode === "Subcategory"
-                      ? "category"
-                      : "family default"}
-                </p>
-              </div>
-              <SectionTabs
-                options={["Category", "Subcategory", "Global"]}
-                value={mode}
-                onChange={setMode}
-              />
-            </div>
-          </CardHeader>
-          <CardContent>
-            {customDisabled ? (
-              <div className="rounded-lg border border-admin-orange/20 bg-admin-orange/5 p-4 text-sm text-admin-orange">
-                Readymade products have no discounts or print customisation.
-              </div>
-            ) : kind === "discounts" ? (
-              <div className="space-y-3">
-                <p className="text-xs text-muted-foreground">
-                  Discount applies to product price only, never print charges.
-                </p>
-                {(
-                  rules?.discountTiers ??
-                  settings.globalRules.customisable.discountTiers ??
-                  []
-                ).map((tier, index) => (
-                  <div key={index} className="grid grid-cols-3 gap-2">
-                    <Field label="Min pieces">
-                      <Input
-                        type="number"
-                        value={tier.min}
-                        onChange={(event) => {
-                          const tiers = [
-                            ...(rules?.discountTiers ??
-                              settings.globalRules.customisable.discountTiers ??
-                              []),
-                          ];
-                          tiers[index] = { ...tier, min: Number(event.target.value) };
-                          save({ discountTiers: tiers });
-                        }}
-                      />
-                    </Field>
-                    <Field label="Max">
-                      <Input
-                        type="number"
-                        value={tier.max ?? ""}
-                        placeholder="No limit"
-                        onChange={(event) => {
-                          const tiers = [
-                            ...(rules?.discountTiers ??
-                              settings.globalRules.customisable.discountTiers ??
-                              []),
-                          ];
-                          tiers[index] = {
-                            ...tier,
-                            max: event.target.value ? Number(event.target.value) : null,
-                          };
-                          save({ discountTiers: tiers });
-                        }}
-                      />
-                    </Field>
-                    <Field label="Discount %">
-                      <Input
-                        type="number"
-                        value={tier.pct}
-                        onChange={(event) => {
-                          const tiers = [
-                            ...(rules?.discountTiers ??
-                              settings.globalRules.customisable.discountTiers ??
-                              []),
-                          ];
-                          tiers[index] = { ...tier, pct: Number(event.target.value) };
-                          save({ discountTiers: tiers });
-                        }}
-                      />
-                    </Field>
-                  </div>
-                ))}
-                <div className="rounded-lg bg-muted/50 p-3 text-xs">
-                  Example: 25 pieces at ₹699 = <strong>{formatMoney(25 * 699 * 0.8)}</strong> before
-                  printing, add-ons and GST.
-                </div>
-              </div>
-            ) : kind === "moq" ? (
-              <div className="grid gap-4 sm:grid-cols-2">
-                <Field label="Minimum quantity">
-                  <Input
-                    type="number"
-                    min="1"
-                    value={rules?.moq ?? (family === "customisable" ? 5 : 1)}
-                    onChange={(event) => save({ moq: Number(event.target.value) })}
-                  />
-                </Field>
-                {family === "readymade" && (
-                  <Field label="Maximum pieces per order">
-                    <Input
-                      type="number"
-                      min="1"
-                      value={rules?.maxQty ?? 3}
-                      onChange={(event) => save({ maxQty: Number(event.target.value) })}
-                    />
-                  </Field>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-5">
-                <div className="grid gap-3 sm:grid-cols-3">
-                  {["Sublimation Print", "DTF Print", "No Print"].map((name) => (
-                    <label
-                      key={name}
-                      className="flex items-center justify-between rounded-lg border border-border/70 p-3 text-xs"
-                    >
-                      {name}
-                      <Switch
-                        checked={(
-                          rules?.printTypes ??
-                          settings.globalRules.customisable.printTypes ??
-                          []
-                        ).includes(name)}
-                        onCheckedChange={(checked) => {
-                          const types =
-                            rules?.printTypes ?? settings.globalRules.customisable.printTypes ?? [];
-                          save({
-                            printTypes: checked
-                              ? [...types, name]
-                              : types.filter((type) => type !== name),
-                          });
-                        }}
-                      />
-                    </label>
-                  ))}
-                </div>
-                <div className="grid gap-3 sm:grid-cols-3">
-                  {(["logo", "name", "number"] as const).map((addOn) => (
-                    <Field
-                      key={addOn}
-                      label={`${addOn[0]?.toUpperCase()}${addOn.slice(1)} charge (₹)`}
-                    >
-                      <Input
-                        type="number"
-                        value={
-                          rules?.printCharges?.[addOn] ??
-                          settings.globalRules.customisable.printCharges?.[addOn] ??
-                          0
-                        }
-                        onChange={(event) =>
-                          save({
-                            printCharges: {
-                              ...(rules?.printCharges ??
-                                settings.globalRules.customisable.printCharges ?? {
-                                  logo: 40,
-                                  name: 30,
-                                  number: 30,
-                                }),
-                              [addOn]: Number(event.target.value),
-                            },
-                          })
-                        }
-                      />
-                    </Field>
-                  ))}
-                </div>
-                <Field label="Roster upload threshold · above this piece count">
-                  <Input
-                    type="number"
-                    value={
-                      rules?.rosterThreshold ??
-                      settings.globalRules.customisable.rosterThreshold ??
-                      15
-                    }
-                    onChange={(event) => save({ rosterThreshold: Number(event.target.value) })}
-                  />
-                </Field>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-    </>
-  );
-}
+// export function RuleEditorPage({ kind }: { kind: "discounts" | "moq" | "print-settings" }) {
+//   const { categories, settings, setSettings } = useAdmin();
+//   const [selected, setSelected] = useState(
+//     categories.find((category) => category.family === "customisable")?.slug ?? "customisable",
+//   );
+//   const [mode, setMode] = useState("Category");
+//   const family =
+//     categories.find((category) => category.slug === selected)?.family ?? "customisable";
+//   const key =
+//     mode === "Global"
+//       ? family === "readymade"
+//         ? "readymade"
+//         : "customisable"
+//       : mode === "Subcategory"
+//         ? `${selected}:${categories.find((category) => category.slug === selected)?.subcategories[0]?.slug ?? ""}`
+//         : selected;
+//   const customDisabled = family === "readymade" && kind !== "moq";
+//   const title =
+//     kind === "print-settings"
+//       ? "Print settings"
+//       : kind === "moq"
+//         ? "MOQ & quantities"
+//         : "Volume discounts";
+//   const rules =
+//     mode === "Global"
+//       ? settings.globalRules[family]
+//       : mode === "Subcategory"
+//         ? settings.subcategoryRules[key]
+//         : settings.categoryRules[key];
+//   const save = (partial: Partial<AdminSettings["globalRules"]["customisable"]>) => {
+//     const next: AdminSettings = {
+//       ...settings,
+//       globalRules: { ...settings.globalRules },
+//       categoryRules: { ...settings.categoryRules },
+//       subcategoryRules: { ...settings.subcategoryRules },
+//     };
+//     if (mode === "Global") next.globalRules[family] = { ...next.globalRules[family], ...partial };
+//     else if (mode === "Subcategory")
+//       next.subcategoryRules[key] = { ...next.subcategoryRules[key], ...partial };
+//     else next.categoryRules[key] = { ...next.categoryRules[key], ...partial };
+//     setSettings(next);
+//     toast.success(`${title} saved`);
+//   };
+//   return (
+//     <>
+//       <PageHeader
+//         title={title}
+//         description="Settings resolve from subcategory, then category, then family default."
+//       />
+//       <div className="grid gap-4 lg:grid-cols-[270px_1fr]">
+//         <Card className="admin-panel h-fit">
+//           <CardHeader>
+//             <CardTitle className="text-sm">Category tree</CardTitle>
+//           </CardHeader>
+//           <CardContent className="space-y-1">
+//             {categories.map((category) => (
+//               <button
+//                 key={category.slug}
+//                 onClick={() => {
+//                   setSelected(category.slug);
+//                   setMode("Category");
+//                 }}
+//                 className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs ${selected === category.slug ? "bg-admin-blue/10 text-admin-blue" : "text-muted-foreground hover:bg-muted"}`}
+//               >
+//                 <span className="truncate">{category.label}</span>
+//                 <FamilyBadge family={category.family} />
+//               </button>
+//             ))}
+//           </CardContent>
+//         </Card>
+//         <Card className="admin-panel">
+//           <CardHeader>
+//             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+//               <div>
+//                 <CardTitle className="text-base">
+//                   {categories.find((category) => category.slug === selected)?.label ??
+//                     "Global defaults"}
+//                 </CardTitle>
+//                 <p className="mt-1 text-xs text-muted-foreground">
+//                   Inherited from{" "}
+//                   {mode === "Category"
+//                     ? "global defaults"
+//                     : mode === "Subcategory"
+//                       ? "category"
+//                       : "family default"}
+//                 </p>
+//               </div>
+//               <SectionTabs
+//                 options={["Category", "Subcategory", "Global"]}
+//                 value={mode}
+//                 onChange={setMode}
+//               />
+//             </div>
+//           </CardHeader>
+//           <CardContent>
+//             {customDisabled ? (
+//               <div className="rounded-lg border border-admin-orange/20 bg-admin-orange/5 p-4 text-sm text-admin-orange">
+//                 Readymade products have no discounts or print customisation.
+//               </div>
+//             ) : kind === "discounts" ? (
+//               <div className="space-y-3">
+//                 <p className="text-xs text-muted-foreground">
+//                   Discount applies to product price only, never print charges.
+//                 </p>
+//                 {(
+//                   rules?.discountTiers ??
+//                   settings.globalRules.customisable.discountTiers ??
+//                   []
+//                 ).map((tier, index) => (
+//                   <div key={index} className="grid grid-cols-3 gap-2">
+//                     <Field label="Min pieces">
+//                       <Input
+//                         type="number"
+//                         value={tier.min}
+//                         onChange={(event) => {
+//                           const tiers = [
+//                             ...(rules?.discountTiers ??
+//                               settings.globalRules.customisable.discountTiers ??
+//                               []),
+//                           ];
+//                           tiers[index] = { ...tier, min: Number(event.target.value) };
+//                           save({ discountTiers: tiers });
+//                         }}
+//                       />
+//                     </Field>
+//                     <Field label="Max">
+//                       <Input
+//                         type="number"
+//                         value={tier.max ?? ""}
+//                         placeholder="No limit"
+//                         onChange={(event) => {
+//                           const tiers = [
+//                             ...(rules?.discountTiers ??
+//                               settings.globalRules.customisable.discountTiers ??
+//                               []),
+//                           ];
+//                           tiers[index] = {
+//                             ...tier,
+//                             max: event.target.value ? Number(event.target.value) : null,
+//                           };
+//                           save({ discountTiers: tiers });
+//                         }}
+//                       />
+//                     </Field>
+//                     <Field label="Discount %">
+//                       <Input
+//                         type="number"
+//                         value={tier.pct}
+//                         onChange={(event) => {
+//                           const tiers = [
+//                             ...(rules?.discountTiers ??
+//                               settings.globalRules.customisable.discountTiers ??
+//                               []),
+//                           ];
+//                           tiers[index] = { ...tier, pct: Number(event.target.value) };
+//                           save({ discountTiers: tiers });
+//                         }}
+//                       />
+//                     </Field>
+//                   </div>
+//                 ))}
+//                 <div className="rounded-lg bg-muted/50 p-3 text-xs">
+//                   Example: 25 pieces at ₹699 = <strong>{formatMoney(25 * 699 * 0.8)}</strong> before
+//                   printing, add-ons and GST.
+//                 </div>
+//               </div>
+//             ) : kind === "moq" ? (
+//               <div className="grid gap-4 sm:grid-cols-2">
+//                 <Field label="Minimum quantity">
+//                   <Input
+//                     type="number"
+//                     min="1"
+//                     value={rules?.moq ?? (family === "customisable" ? 5 : 1)}
+//                     onChange={(event) => save({ moq: Number(event.target.value) })}
+//                   />
+//                 </Field>
+//                 {family === "readymade" && (
+//                   <Field label="Maximum pieces per order">
+//                     <Input
+//                       type="number"
+//                       min="1"
+//                       value={rules?.maxQty ?? 3}
+//                       onChange={(event) => save({ maxQty: Number(event.target.value) })}
+//                     />
+//                   </Field>
+//                 )}
+//               </div>
+//             ) : (
+//               <div className="space-y-5">
+//                 <div className="grid gap-3 sm:grid-cols-3">
+//                   {["Sublimation Print", "DTF Print", "No Print"].map((name) => (
+//                     <label
+//                       key={name}
+//                       className="flex items-center justify-between rounded-lg border border-border/70 p-3 text-xs"
+//                     >
+//                       {name}
+//                       <Switch
+//                         checked={(
+//                           rules?.printTypes ??
+//                           settings.globalRules.customisable.printTypes ??
+//                           []
+//                         ).includes(name)}
+//                         onCheckedChange={(checked) => {
+//                           const types =
+//                             rules?.printTypes ?? settings.globalRules.customisable.printTypes ?? [];
+//                           save({
+//                             printTypes: checked
+//                               ? [...types, name]
+//                               : types.filter((type) => type !== name),
+//                           });
+//                         }}
+//                       />
+//                     </label>
+//                   ))}
+//                 </div>
+//                 <div className="grid gap-3 sm:grid-cols-3">
+//                   {(["logo", "name", "number"] as const).map((addOn) => (
+//                     <Field
+//                       key={addOn}
+//                       label={`${addOn[0]?.toUpperCase()}${addOn.slice(1)} charge (₹)`}
+//                     >
+//                       <Input
+//                         type="number"
+//                         value={
+//                           rules?.printCharges?.[addOn] ??
+//                           settings.globalRules.customisable.printCharges?.[addOn] ??
+//                           0
+//                         }
+//                         onChange={(event) =>
+//                           save({
+//                             printCharges: {
+//                               ...(rules?.printCharges ??
+//                                 settings.globalRules.customisable.printCharges ?? {
+//                                   logo: 40,
+//                                   name: 30,
+//                                   number: 30,
+//                                 }),
+//                               [addOn]: Number(event.target.value),
+//                             },
+//                           })
+//                         }
+//                       />
+//                     </Field>
+//                   ))}
+//                 </div>
+//                 <Field label="Roster upload threshold · above this piece count">
+//                   <Input
+//                     type="number"
+//                     value={
+//                       rules?.rosterThreshold ??
+//                       settings.globalRules.customisable.rosterThreshold ??
+//                       15
+//                     }
+//                     onChange={(event) => save({ rosterThreshold: Number(event.target.value) })}
+//                   />
+//                 </Field>
+//               </div>
+//             )}
+//           </CardContent>
+//         </Card>
+//       </div>
+//     </>
+//   );
+// }
 
 export function ShowcasePage() {
   const { showcase, setShowcase } = useAdmin();

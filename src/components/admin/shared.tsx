@@ -18,7 +18,8 @@ import type { CategoryRegistryItem, Order, Product, ProductFamily, ShowcaseCusto
 
 const groups: Array<{ title: string; entries: ReadonlyArray<readonly [string, string, typeof LayoutDashboard]> }> = [
   { title: "OVERVIEW", entries: [["Overview", "/admin", LayoutDashboard], ["Analytics", "/admin/analytics", BarChart3]] as const },
-  { title: "CATALOG", entries: [["Products", "/admin/products", Package], ["Custom design", "/admin/custom-design", Sparkles], ["Categories", "/admin/categories", Box], ["Discounts", "/admin/discounts", Tag], ["MOQ & quantities", "/admin/moq", SlidersHorizontal], ["Print settings", "/admin/print-settings", Sparkles], ["Coupons", "/admin/coupons", Gift]] as const },
+  // { title: "CATALOG", entries: [["Products", "/admin/products", Package], ["Custom design", "/admin/custom-design", Sparkles], ["Categories", "/admin/categories", Box], ["Discounts", "/admin/discounts", Tag], ["MOQ & quantities", "/admin/moq", SlidersHorizontal], ["Print settings", "/admin/print-settings", Sparkles], ["Coupons", "/admin/coupons", Gift]] as const },
+  { title: "CATALOG", entries: [["Products", "/admin/products", Package], ["Custom design", "/admin/custom-design", Sparkles], ["Discounts", "/admin/discounts", Tag], ["MOQ & quantities", "/admin/moq", SlidersHorizontal], ["Print settings", "/admin/print-settings", Sparkles], ["Coupons", "/admin/coupons", Gift]] as const },
   { title: "SALES", entries: [["Orders", "/admin/orders", ShoppingBag], ["Order status", "/admin/order-status", Truck], ["Payments", "/admin/payments", CreditCard]] as const },
   { title: "CUSTOMERS", entries: [["Customers", "/admin/customers", Users], ["Our customers", "/admin/our-customers", Eye]] as const },
   { title: "SETTINGS", entries: [["Review analysis", "/admin/reviews", Eye]] as const },
