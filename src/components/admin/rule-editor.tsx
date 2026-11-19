@@ -11,6 +11,11 @@ import type { DiscountTier, PricingConfig, ProductFamily, RuleOverrides } from "
 
 type RuleKind = "discounts" | "moq" | "print-settings";
 type Target = { category: string; subcategory?: string };
+const KIND_KEYS: Record<RuleKind, Array<keyof RuleOverrides>> = {
+  discounts: ["discountTiers"],
+  moq: ["moq", "maxQty"],
+  "print-settings": ["printTypes", "printChargesByType", "printDescriptionsByType"],
+};
 
 const defaultPrintCharges = { logo: 40, name: 30, number: 30 };
 const defaultDescriptions = { logo: "Logo print per piece", name: "Name print per piece", number: "Number print per piece" };
@@ -35,20 +40,27 @@ export function RuleEditor({ kind }: { kind: RuleKind }) {
 
   const patch = <K extends keyof RuleOverrides>(key: K, value: RuleOverrides[K]) => setDraft((current) => ({ ...current, [key]: value }));
   const save = () => {
-    const next = { ...settings, categoryRules: { ...settings.categoryRules }, subcategoryRules: { ...settings.subcategoryRules } };
-    if (target.subcategory) next.subcategoryRules[overrideKey] = { ...next.subcategoryRules[overrideKey], ...draft };
-    else next.categoryRules[target.category] = { ...next.categoryRules[target.category], ...draft };
-    setSettings(next);
-    toast.success(`${title} saved`);
-  };
+  const changed = Object.fromEntries(
+    KIND_KEYS[kind].filter((key) => draft[key] !== undefined).map((key) => [key, draft[key]]),
+  ) as RuleOverrides;
+  const next = { ...settings, categoryRules: { ...settings.categoryRules }, subcategoryRules: { ...settings.subcategoryRules } };
+  if (target.subcategory) next.subcategoryRules[overrideKey] = { ...next.subcategoryRules[overrideKey], ...changed };
+  else next.categoryRules[target.category] = { ...next.categoryRules[target.category], ...changed };
+  setSettings(next);
+  toast.success(`${title} saved`);
+};
   const reset = () => {
-    const next = { ...settings, categoryRules: { ...settings.categoryRules }, subcategoryRules: { ...settings.subcategoryRules } };
-    if (target.subcategory) delete next.subcategoryRules[overrideKey];
-    else delete next.categoryRules[target.category];
-    setSettings(next);
-    setDraft(target.subcategory ? { ...settings.globalRules[family], ...settings.categoryRules[target.category] } : settings.globalRules[family]);
-    toast.success("Reset to inherited settings");
+  const strip = (rules: RuleOverrides | undefined): RuleOverrides => {
+    const copy: RuleOverrides = { ...rules };
+    for (const key of KIND_KEYS[kind]) delete copy[key];
+    return copy;
   };
+  const next = { ...settings, categoryRules: { ...settings.categoryRules }, subcategoryRules: { ...settings.subcategoryRules } };
+  if (target.subcategory) next.subcategoryRules[overrideKey] = strip(next.subcategoryRules[overrideKey]);
+  else next.categoryRules[target.category] = strip(next.categoryRules[target.category]);
+  setSettings(next);
+  toast.success("Reset to inherited settings");
+};
 
   const tiers = draft.discountTiers ?? inherited.discountTiers ?? [];
   const printTypes = (draft.printTypes ?? inherited.printTypes ?? []).filter((type) => type !== "No Print");
