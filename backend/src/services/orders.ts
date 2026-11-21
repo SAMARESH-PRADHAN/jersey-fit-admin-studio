@@ -28,18 +28,22 @@ export class OrderService {
       const val = res[0]?.next_val ?? Date.now();
       return `JF-${val}`;
     } catch {
-      // Fallback if sequence not yet created or local mock
-      const [lastOrder] = await db
-        .select({ id: orders.id })
-        .from(orders)
-        .orderBy(desc(orders.createdAt))
-        .limit(1);
+      // Robust fallback if sequence check fails
+      try {
+        const [lastOrder] = await db
+          .select({ id: orders.id })
+          .from(orders)
+          .orderBy(desc(orders.createdAt))
+          .limit(1);
 
-      if (lastOrder && lastOrder.id.startsWith("JF-")) {
-        const num = parseInt(lastOrder.id.replace("JF-", ""), 10);
-        if (!isNaN(num)) return `JF-${num + 1}`;
+        if (lastOrder && lastOrder.id.startsWith("JF-")) {
+          const num = parseInt(lastOrder.id.replace("JF-", ""), 10);
+          if (!isNaN(num)) return `JF-${num + 1}`;
+        }
+      } catch {
+        // ignore
       }
-      return `JF-${Math.floor(2400 + Math.random() * 9000)}`;
+      return `JF-${Date.now().toString().slice(-7)}`;
     }
   }
 
@@ -60,28 +64,25 @@ export class OrderService {
     const balancePaid = breakdown.total - amountPaid;
 
     return await db.transaction(async (tx) => {
-      // Upsert or find customer
-      let customerId = input.customer.id;
-      if (!customerId) {
-        const [existing] = await tx
-          .select({ id: customers.id })
-          .from(customers)
-          .where(eq(customers.email, input.customer.email.toLowerCase()))
-          .limit(1);
+      // Find or insert customer in database
+      const customerEmail = input.customer.email.toLowerCase().trim();
+      const [existing] = await tx
+        .select({ id: customers.id })
+        .from(customers)
+        .where(eq(customers.email, customerEmail))
+        .limit(1);
 
-        if (existing) {
-          customerId = existing.id;
-        } else {
-          customerId = `customer-${Date.now()}`;
-          await tx.insert(customers).values({
-            id: customerId,
-            name: input.customer.name,
-            email: input.customer.email.toLowerCase(),
-            phone: input.customer.phone,
-            city: input.customer.city,
-            joinedAt: new Date(),
-          });
-        }
+      let customerId = existing?.id;
+      if (!customerId) {
+        customerId = input.customer.id || `customer-${Date.now()}`;
+        await tx.insert(customers).values({
+          id: customerId,
+          name: input.customer.name,
+          email: customerEmail,
+          phone: input.customer.phone,
+          city: input.customer.city || "Mumbai",
+          joinedAt: new Date(),
+        });
       }
 
       // Generate sequence-driven Order ID

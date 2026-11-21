@@ -57,36 +57,8 @@ function makeSeed(now: number) {
     city: CITIES[index % CITIES.length] ?? "Mumbai",
     joinedAt: new Date(now - (index + 2) * 18 * 86400000).toISOString(), demo: true,
   }));
-  const orders: Order[] = Array.from({ length: 45 }, (_, index) => {
-    const customer = customers[index % customers.length] ?? customers[0];
-    const product = SEED_PRODUCTS[(index * 3 + 2) % SEED_PRODUCTS.length] ?? SEED_PRODUCTS[0];
-    if (!customer || !product) throw new Error("Demo records are unavailable");
-    const customisable = product.family === "customisable";
-    const quantity = customisable ? 5 + ((index * 7) % 28) : 1 + (index % 3);
-    const subtotal = product.price * quantity;
-    const discountPct = customisable ? (quantity >= 71 ? 40 : quantity >= 41 ? 30 : quantity >= 23 ? 20 : quantity >= 10 ? 10 : 0) : 0;
-    const discount = Math.round(subtotal * discountPct / 100);
-    const gst = Math.round((subtotal - discount) * 0.05);
-    const total = subtotal - discount + gst;
-    const statusIndex = index % STATUSES.length;
-    const payMode = customisable && index % 4 === 0 ? "advance" : "full";
-    const amountPaid = payMode === "advance" ? Math.round(total / 2) : total;
-    const createdAt = new Date(now - (index * 4 + 1) * 86400000).toISOString();
-    const status = STATUSES[statusIndex] ?? "Placed";
-    return {
-      id: `JF-${String(2401 + index)}`, userId: customer.id, customerName: customer.name,
-      customerEmail: customer.email, customerPhone: customer.phone, createdAt, updatedAt: createdAt,
-      items: [{ productId: product.id, productName: product.name, family: product.family, section: product.section, category: product.category, ...(product.subCategory ? { subCategory: product.subCategory } : {}), quantity, unitPrice: product.price, size: ["XS", "S", "M", "L", "XL", "2XL", "3XL"][index % 7] ?? "M", ...(customisable ? { printType: ["Sublimation Print", "DTF Print", "No Print"][index % 3] ?? "Sublimation Print", addOns: index % 3 === 0 ? ["Logo", "Name"] : ["Name", "Number"], ...(index % 9 === 0 ? { rosterFile: { name: "team-roster.csv", mime: "text/csv", dataUrl: "data:text/csv;base64,bmFtZSxzaXplCkFhcmF2LEw=" } } : {}) } : {}) }],
-      address: { line: `${14 + index} Park Street`, city: customer.city, state: "India", pincode: `4000${index % 10}1` },
-      paymentMethod: METHODS[index % METHODS.length] ?? "UPI", payMode, amountPaid, balancePaid: total - amountPaid,
-      subtotal, discount, ...(index % 6 === 0 ? { coupon: ["JERSEY100", "FIT200", "SQUAD500"][index % 3] } : {}), gst, total,
-      status, statusIndex, statusHistory: [{ status: "Placed", date: createdAt }, ...(statusIndex > 0 ? [{ status, date: createdAt }] : [])], demo: true,
-    };
-  });
-  const payments: Payment[] = orders.flatMap((order) => [
-    { id: `PAY-${order.id}`, orderId: order.id, customerName: order.customerName, method: order.paymentMethod, mode: order.payMode, amount: order.amountPaid, date: order.createdAt, status: "Collected" as const, demo: true },
-    ...(order.balancePaid > 0 ? [{ id: `BAL-${order.id}`, orderId: order.id, customerName: order.customerName, method: order.paymentMethod, mode: order.payMode, amount: order.balancePaid, date: order.updatedAt, status: "Pending" as const, demo: true }] : []),
-  ]);
+  const orders: Order[] = [];
+  const payments: Payment[] = [];
   const coupons: Coupon[] = [
     { code: "JERSEY100", label: "₹100 off", amount: 100, discountType: "flat", minimumSubtotal: 0, active: true, startsAt: "2026-01-01", expiresAt: null, usageLimit: null, usageCount: 18 },
     { code: "FIT200", label: "₹200 off above ₹2,000", amount: 200, discountType: "flat", minimumSubtotal: 2000, active: true, startsAt: "2026-01-01", expiresAt: null, usageLimit: 100, usageCount: 9 },
@@ -120,8 +92,8 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     let productData = readStored(KEYS.products, seed.products);
     let categoryData = readStored(KEYS.categories, seed.categories);
     let customerData = readStored(KEYS.customers, seed.customers);
-    let orderData = readStored(KEYS.orders, seed.orders);
-    let paymentData = readStored(KEYS.payments, seed.payments);
+    let orderData = readStored(KEYS.orders, seed.orders).filter((o: any) => !o.demo);
+    let paymentData = readStored(KEYS.payments, seed.payments).filter((p: any) => !p.demo);
     let couponData = readStored(KEYS.coupons, seed.coupons);
     let settingsData = readStored(KEYS.settings, seed.settings);
     let showcaseData = readStored(KEYS.showcase, seed.showcase);
@@ -171,8 +143,15 @@ export function AdminProvider({ children }: { children: ReactNode }) {
         if (remoteCusts.status === "fulfilled" && Array.isArray(remoteCusts.value) && remoteCusts.value.length > 0) {
           customerData = remoteCusts.value;
         }
-        if (remoteOrders.status === "fulfilled" && Array.isArray(remoteOrders.value) && remoteOrders.value.length > 0) {
-          orderData = remoteOrders.value;
+        if (remoteOrders.status === "fulfilled" && remoteOrders.value) {
+          const list = Array.isArray(remoteOrders.value)
+            ? remoteOrders.value
+            : Array.isArray((remoteOrders.value as any).orders)
+            ? (remoteOrders.value as any).orders
+            : null;
+          if (list !== null) {
+            orderData = list;
+          }
         }
         if (remotePayments.status === "fulfilled" && Array.isArray(remotePayments.value) && remotePayments.value.length > 0) {
           paymentData = remotePayments.value;

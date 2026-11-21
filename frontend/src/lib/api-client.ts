@@ -3,12 +3,16 @@
  * Dispatches RPC calls to backend API / server functions.
  */
 
-// In development or when backend is running on port 3001
-const API_BASE_URL = typeof window !== "undefined"
-  ? (window.location.port === "3000" || window.location.port === "5173" || window.location.port === "8080"
-      ? "http://localhost:3001"
-      : "")
-  : "http://localhost:3001";
+// Backend API base URL
+// When running in development, backend is on port 3001
+const API_BASE_URL =
+  typeof window !== "undefined"
+    ? ((window as any).__JF_API_URL__ ||
+       (import.meta as any).env?.VITE_API_URL ||
+       (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+         ? `${window.location.protocol}//${window.location.hostname}:3001`
+         : ""))
+    : "http://localhost:3001";
 
 export async function callBackendApi<T = any>(
   action: string,

@@ -6,6 +6,7 @@ export const customers = pgTable("customers", {
   email: varchar("email", { length: 255 }).notNull().unique(),
   phone: varchar("phone", { length: 50 }).notNull(),
   city: varchar("city", { length: 100 }).notNull(),
+  passwordHash: varchar("password_hash", { length: 255 }),
   joinedAt: timestamp("joined_at", { withTimezone: true }).notNull(),
   demo: boolean("demo").default(false).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow().notNull(),

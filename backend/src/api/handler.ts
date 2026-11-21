@@ -87,6 +87,12 @@ export class ApiHandler {
       case "storefront.createReview":
         return await SettingsService.createReview(params);
 
+      case "storefront.signup":
+        return await CustomerService.signup(params);
+
+      case "storefront.login":
+        return await CustomerService.login(params.email, params.password);
+
       // --- Auth ---
       case "auth.login": {
         const res = await AuthService.login(params.email, params.password);

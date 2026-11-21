@@ -1,10 +1,74 @@
 import { desc, eq } from "drizzle-orm";
+import bcrypt from "bcryptjs";
 import { db } from "../db/index.js";
 import { customers } from "../db/schema/customers.js";
 import { orderItems, orders } from "../db/schema/orders.js";
 import { payments } from "../db/schema/payments.js";
 
 export class CustomerService {
+  static async signup(data: { name: string; email: string; phone: string; password?: string; city?: string }) {
+    const email = data.email.toLowerCase().trim();
+    const [existing] = await db
+      .select({ id: customers.id })
+      .from(customers)
+      .where(eq(customers.email, email))
+      .limit(1);
+
+    if (existing) {
+      throw new Error("An account with this email already exists.");
+    }
+
+    const passwordHash = data.password ? await bcrypt.hash(data.password, 10) : null;
+    const id = `usr_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`;
+
+    const [newCustomer] = await db
+      .insert(customers)
+      .values({
+        id,
+        name: data.name.trim(),
+        email,
+        phone: data.phone.trim(),
+        city: data.city || "Mumbai",
+        passwordHash,
+        joinedAt: new Date(),
+      })
+      .returning();
+
+    return {
+      id: newCustomer.id,
+      name: newCustomer.name,
+      email: newCustomer.email,
+      phone: newCustomer.phone,
+    };
+  }
+
+  static async login(email: string, password?: string) {
+    const cleanEmail = email.toLowerCase().trim();
+    const [cust] = await db
+      .select()
+      .from(customers)
+      .where(eq(customers.email, cleanEmail))
+      .limit(1);
+
+    if (!cust) {
+      throw new Error("No account found with this email.");
+    }
+
+    if (cust.passwordHash && password) {
+      const match = await bcrypt.compare(password, cust.passwordHash);
+      if (!match) {
+        throw new Error("Incorrect password.");
+      }
+    }
+
+    return {
+      id: cust.id,
+      name: cust.name,
+      email: cust.email,
+      phone: cust.phone,
+    };
+  }
+
   static async listCustomers(search?: string) {
     const allCustomers = await db.select().from(customers);
     const allOrders = await db.select().from(orders);
