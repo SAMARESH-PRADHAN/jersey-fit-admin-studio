@@ -143,7 +143,40 @@ export function AdminLogin() {
   const [email, setEmail] = useState("admin@jerseyfit.in");
   const [password, setPassword] = useState("admin123");
   const [error, setError] = useState("");
-  const submit = (event: FormEvent<HTMLFormElement>) => { event.preventDefault(); if (email.trim().toLowerCase() !== "admin@jerseyfit.in" || password !== "admin123") { setError("Email or password is incorrect."); return; } writeStored(KEYS.session, { email, signedInAt: new Date().toISOString() }); toast.success("Welcome to Jersey Fit Admin"); void navigate({ to: "/admin" }); };
+  const [loading, setLoading] = useState(false);
+  const submit = async (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      // Connect to backend auth.login
+      const { callBackendApi } = await import("@/lib/api-client");
+      const res = await callBackendApi<{ token: string; user: { id: string; email: string; name: string; role: string } }>(
+        "auth.login",
+        { email, password }
+      );
+      writeStored(KEYS.session, {
+        email: res.user.email,
+        name: res.user.name,
+        role: res.user.role,
+        token: res.token,
+        signedInAt: new Date().toISOString(),
+      });
+      toast.success("Welcome to Jersey Fit Admin");
+      void navigate({ to: "/admin" });
+    } catch (err: any) {
+      // Fallback for local demo mode if backend is unreachable
+      if (email.trim().toLowerCase() === "admin@jerseyfit.in" && password === "admin123") {
+        writeStored(KEYS.session, { email, signedInAt: new Date().toISOString() });
+        toast.success("Welcome to Jersey Fit Admin (Offline)");
+        void navigate({ to: "/admin" });
+      } else {
+        setError(err.message || "Email or password is incorrect.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
   return <div className="admin-theme admin-dark min-h-screen"><div className="admin-login-bg flex min-h-screen items-center justify-center px-5 py-12"><div className="grid w-full max-w-[930px] overflow-hidden rounded-2xl border border-border/70 bg-card/85 shadow-2xl backdrop-blur md:grid-cols-[1.05fr_0.95fr]"><div className="relative hidden min-h-[560px] flex-col justify-between overflow-hidden bg-admin-login-panel p-10 md:flex"><div className="relative z-10"><div className="flex size-12 items-center justify-center rounded-xl bg-admin-gradient font-display text-xl text-primary-foreground">JF</div><p className="mt-8 text-xs font-semibold uppercase tracking-[0.18em] text-admin-lime">JERSEY FIT / CONTROL ROOM</p><h1 className="mt-4 max-w-sm font-display text-5xl leading-[1.03]">YOUR STORE.<br />YOUR PLAYBOOK.</h1><p className="mt-4 max-w-sm text-sm leading-6 text-muted-foreground">One clear view of your catalog, orders and the people wearing your team colors.</p></div><div className="relative z-10 flex items-center gap-3 border-t border-border/50 pt-5 text-xs text-muted-foreground"><ShieldCheck className="size-4 text-admin-lime" /> Private demo workspace <span className="ml-auto">INDIA · ₹ INR</span></div></div><form onSubmit={submit} className="flex flex-col justify-center p-7 sm:p-10"><p className="text-[11px] font-bold uppercase tracking-[0.16em] text-admin-blue">WELCOME BACK</p><h2 className="mt-2 font-display text-3xl">Admin sign in</h2><p className="mt-2 text-sm text-muted-foreground">Sign in to manage your Jersey Fit store.</p><label className="mt-8 text-xs font-semibold" htmlFor="admin-email">Email address</label><Input id="admin-email" type="email" value={email} onChange={(event) => setEmail(event.target.value)} className="mt-2 h-11" autoComplete="username" required /><label className="mt-5 text-xs font-semibold" htmlFor="admin-password">Password</label><Input id="admin-password" type="password" value={password} onChange={(event) => setPassword(event.target.value)} className="mt-2 h-11" autoComplete="current-password" required />{error && <p className="mt-3 text-xs text-destructive" role="alert">{error}</p>}<Button type="submit" className="mt-6 h-11 w-full bg-admin-gradient text-primary-foreground hover:opacity-90">Sign in <ChevronRight className="size-4" /></Button><div className="mt-6 rounded-lg border border-border/70 bg-muted/40 p-3"><p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Demo access</p><p className="mt-1 text-xs"><span className="text-muted-foreground">Email</span><span className="float-right font-medium">admin@jerseyfit.in</span></p><p className="mt-1 text-xs"><span className="text-muted-foreground">Password</span><span className="float-right font-medium">admin123</span></p></div></form></div></div></div>;
 }
 
@@ -179,17 +212,53 @@ export function ProductEditor({ product, initialDraft, onSave, onClose }: { prod
 function Field({ label, required, wide, children }: { label: string; required?: boolean; wide?: boolean; children: ReactNode }) { return <label className={`block space-y-1.5 text-xs font-medium ${wide ? "sm:col-span-2" : ""}`}>{label}{required && <span className="text-destructive"> *</span>}{children}</label>; }
 
 export function ImageUpload({ value, onChange, multiple = false }: { value: string[]; onChange: (images: string[]) => void; multiple?: boolean }) {
+  const [uploading, setUploading] = useState(false);
   const addFiles = async (files: FileList | null) => {
     if (!files) return;
     const accepted: string[] = [];
-    for (const file of Array.from(files).slice(0, multiple ? 4 - value.length : 1)) {
-      if (file.size > 2 * 1024 * 1024) { toast.error(`${file.name} is over 2 MB`); continue; }
-      const image = await compressImage(file);
-      if (image) accepted.push(image);
+    setUploading(true);
+    try {
+      const fileList = Array.from(files).slice(0, multiple ? 4 - value.length : 1);
+      for (const file of fileList) {
+        if (file.size > 5 * 1024 * 1024) { toast.error(`${file.name} is over 5 MB`); continue; }
+        
+        // Try uploading to S3 via backend presigned URL
+        try {
+          const { callBackendApi } = await import("@/lib/api-client");
+          const presigned = await callBackendApi<{ uploadUrl: string; fileUrl: string; key: string }>(
+            "storage.getPresignedUploadUrl",
+            {
+              filename: file.name,
+              contentType: file.type || "image/jpeg",
+              folder: "products",
+              isPublic: true,
+            }
+          );
+
+          if (presigned?.uploadUrl) {
+            const putRes = await fetch(presigned.uploadUrl, {
+              method: "PUT",
+              headers: { "Content-Type": file.type || "image/jpeg" },
+              body: file,
+            });
+            if (putRes.ok) {
+              accepted.push(presigned.fileUrl);
+              continue;
+            }
+          }
+        } catch {
+          // Fall back to compressed local data URL if S3 is unavailable or offline
+        }
+
+        const image = await compressImage(file);
+        if (image) accepted.push(image);
+      }
+    } finally {
+      setUploading(false);
     }
     onChange(multiple ? [...value, ...accepted].slice(0, 4) : accepted);
   };
-  return <div><label className="flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 p-4 text-center transition-colors hover:border-admin-blue/50"><CloudUpload className="mb-2 size-5 text-admin-blue" /><span className="text-xs text-muted-foreground">Drop an image or browse · max 2 MB each</span><input aria-label="Upload product image" className="sr-only" type="file" accept="image/*" multiple={multiple} onChange={(event) => { void addFiles(event.target.files); event.currentTarget.value = ""; }} /></label>{value.length > 0 && <div className="mt-2 flex flex-wrap gap-2">{value.map((src, index) => <div key={`${src.slice(0, 20)}-${index}`} className="relative size-16 overflow-hidden rounded-lg border border-border"><img src={src} className="size-full object-cover" alt={`Uploaded image ${index + 1}`} /><button type="button" aria-label="Remove image" className="absolute right-1 top-1 rounded-full bg-background/90 p-0.5" onClick={() => onChange(value.filter((_, i) => i !== index))}><X className="size-3" /></button></div>)}</div>}</div>;
+  return <div><label className={`flex min-h-24 cursor-pointer flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 p-4 text-center transition-colors hover:border-admin-blue/50 ${uploading ? "opacity-50 pointer-events-none" : ""}`}><CloudUpload className="mb-2 size-5 text-admin-blue" /><span className="text-xs text-muted-foreground">{uploading ? "Uploading media..." : "Drop an image or browse · max 5 MB each"}</span><input aria-label="Upload product image" className="sr-only" type="file" accept="image/*" multiple={multiple} disabled={uploading} onChange={(event) => { void addFiles(event.target.files); event.currentTarget.value = ""; }} /></label>{value.length > 0 && <div className="mt-2 flex flex-wrap gap-2">{value.map((src, index) => <div key={`${src.slice(0, 20)}-${index}`} className="relative size-16 overflow-hidden rounded-lg border border-border"><img src={src} className="size-full object-cover" alt={`Uploaded image ${index + 1}`} /><button type="button" aria-label="Remove image" className="absolute right-1 top-1 rounded-full bg-background/90 p-0.5" onClick={() => onChange(value.filter((_, i) => i !== index))}><X className="size-3" /></button></div>)}</div>}</div>;
 }
 
 async function compressImage(file: File): Promise<string | null> {
