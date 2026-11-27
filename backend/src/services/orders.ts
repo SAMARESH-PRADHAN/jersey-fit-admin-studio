@@ -251,26 +251,38 @@ export class OrderService {
         .where(eq(orders.id, orderId))
         .returning();
 
-      // 2. Insert Collected Payment for balance
-      await tx.insert(payments).values({
-        id: `BAL-COLLECTED-${orderId}-${Date.now()}`,
-        orderId,
-        customerName: order.customerName,
-        method: order.paymentMethod,
-        mode: order.payMode,
-        amount: remaining,
-        date: now,
-        status: "Collected",
-      });
-
-      // 3. Mark existing pending payment as collected or updated
-      await tx
-        .update(payments)
-        .set({ status: "Collected" })
-        .where(eq(payments.id, `BAL-${orderId}`));
-
       return updatedOrder;
     });
+  }
+
+  static async getCustomerOrders(emailOrUserId: string) {
+    const clean = emailOrUserId.toLowerCase().trim();
+    const customerOrders = await db
+      .select()
+      .from(orders)
+      .where(sql`LOWER(${orders.customerEmail}) = ${clean} OR ${orders.userId} = ${emailOrUserId}`)
+      .orderBy(desc(orders.createdAt));
+
+    const allItems = await db.select().from(orderItems);
+    const allHistory = await db.select().from(orderStatusHistory);
+
+    const itemsMap = new Map<string, typeof allItems>();
+    for (const item of allItems) {
+      if (!itemsMap.has(item.orderId)) itemsMap.set(item.orderId, []);
+      itemsMap.get(item.orderId)!.push(item);
+    }
+
+    const historyMap = new Map<string, typeof allHistory>();
+    for (const hist of allHistory.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())) {
+      if (!historyMap.has(hist.orderId)) historyMap.set(hist.orderId, []);
+      historyMap.get(hist.orderId)!.push(hist);
+    }
+
+    return customerOrders.map((ord) => ({
+      ...ord,
+      items: itemsMap.get(ord.id) ?? [],
+      statusHistory: historyMap.get(ord.id) ?? [],
+    }));
   }
 
   static async listOrders(filter?: {

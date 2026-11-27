@@ -75,6 +75,9 @@ export class ApiHandler {
       case "storefront.createOrder":
         return await OrderService.createOrder(params);
 
+      case "storefront.getCustomerOrders":
+        return await OrderService.getCustomerOrders(params.email || params.userId);
+
       case "storefront.listShowcase":
         return await SettingsService.listShowcase();
 

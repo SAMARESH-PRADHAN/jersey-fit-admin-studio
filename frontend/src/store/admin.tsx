@@ -345,6 +345,17 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   const setCustomDesignOptions = useCallback((data: CustomDesignOption[]) => {
     update(KEYS.customDesignOptions, setCustomDesignOptionsState, data);
+    for (const item of data) {
+      void callBackendApi("admin.customDesign.update", {
+        id: item.id,
+        data: {
+          price: item.price,
+          description: item.description,
+        },
+      }).catch((err) => {
+        console.warn("Could not save custom design option to backend:", err);
+      });
+    }
   }, [update]);
 
   const setReviews = useCallback((data: ProductReview[]) => {
