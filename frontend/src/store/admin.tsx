@@ -49,157 +49,211 @@ export interface AdminData {
   restoreBackup: (backup: unknown) => void;
 }
 
-function makeSeed(now: number) {
-  const customers: Customer[] = CUSTOMER_NAMES.map((name, index) => ({
-    id: `customer-${index + 1}`, name,
-    email: `${name.toLowerCase().replaceAll(" ", ".")}@example.in`,
-    phone: `+91 98${String(10000000 + index * 73117).slice(0, 8)}`,
-    city: CITIES[index % CITIES.length] ?? "Mumbai",
-    joinedAt: new Date(now - (index + 2) * 18 * 86400000).toISOString(), demo: true,
-  }));
-  const orders: Order[] = [];
-  const payments: Payment[] = [];
-  const coupons: Coupon[] = [
-    { code: "JERSEY100", label: "₹100 off", amount: 100, discountType: "flat", minimumSubtotal: 0, active: true, startsAt: "2026-01-01", expiresAt: null, usageLimit: null, usageCount: 18 },
-    { code: "FIT200", label: "₹200 off above ₹2,000", amount: 200, discountType: "flat", minimumSubtotal: 2000, active: true, startsAt: "2026-01-01", expiresAt: null, usageLimit: 100, usageCount: 9 },
-    { code: "SQUAD500", label: "₹500 off above ₹6,000", amount: 500, discountType: "flat", minimumSubtotal: 6000, active: true, startsAt: "2026-01-01", expiresAt: null, usageLimit: 50, usageCount: 4 },
-  ];
-  const reviews: ProductReview[] = SEED_PRODUCTS.slice(0, 8).map((product, index) => {
-    const rating = [5, 4, 5, 3, 5, 4, 2, 5][index] ?? 5;
-    return { id: `review-${index + 1}`, productId: product.id, productName: product.name, customerName: CUSTOMER_NAMES[(index + 3) % CUSTOMER_NAMES.length] ?? "Jersey Fit customer", rating, text: ["Great fit and the print quality held up after washing.", "Comfortable material and a clean finish.", "The team loved the colours.", "Good jersey; delivery could be quicker.", "Sizing was accurate for our whole team.", "Lightweight and easy to move in.", "Print alignment needs a closer check.", "Excellent quality for match day."][index] ?? "Good product.", date: new Date(now - (index + 1) * 86400000).toISOString(), status: rating >= 4 ? "Positive" : rating === 3 ? "Neutral" : "Needs attention" };
-  });
-  return { products: SEED_PRODUCTS, categories: SEED_CATEGORIES, customers, orders, payments, coupons, settings: DEFAULT_SETTINGS, showcase: [] as ShowcaseCustomer[], customDesignOptions: CUSTOM_DESIGN_OPTIONS, reviews };
+// function makeSeed(now: number) {
+//   const customers: Customer[] = CUSTOMER_NAMES.map((name, index) => ({
+//     id: `customer-${index + 1}`, name,
+//     email: `${name.toLowerCase().replaceAll(" ", ".")}@example.in`,
+//     phone: `+91 98${String(10000000 + index * 73117).slice(0, 8)}`,
+//     city: CITIES[index % CITIES.length] ?? "Mumbai",
+//     joinedAt: new Date(now - (index + 2) * 18 * 86400000).toISOString(), demo: true,
+//   }));
+//   const orders: Order[] = [];
+//   const payments: Payment[] = [];
+//   const coupons: Coupon[] = [
+//     { code: "JERSEY100", label: "₹100 off", amount: 100, discountType: "flat", minimumSubtotal: 0, active: true, startsAt: "2026-01-01", expiresAt: null, usageLimit: null, usageCount: 18 },
+//     { code: "FIT200", label: "₹200 off above ₹2,000", amount: 200, discountType: "flat", minimumSubtotal: 2000, active: true, startsAt: "2026-01-01", expiresAt: null, usageLimit: 100, usageCount: 9 },
+//     { code: "SQUAD500", label: "₹500 off above ₹6,000", amount: 500, discountType: "flat", minimumSubtotal: 6000, active: true, startsAt: "2026-01-01", expiresAt: null, usageLimit: 50, usageCount: 4 },
+//   ];
+//   const reviews: ProductReview[] = SEED_PRODUCTS.slice(0, 8).map((product, index) => {
+//     const rating = [5, 4, 5, 3, 5, 4, 2, 5][index] ?? 5;
+//     return { id: `review-${index + 1}`, productId: product.id, productName: product.name, customerName: CUSTOMER_NAMES[(index + 3) % CUSTOMER_NAMES.length] ?? "Jersey Fit customer", rating, text: ["Great fit and the print quality held up after washing.", "Comfortable material and a clean finish.", "The team loved the colours.", "Good jersey; delivery could be quicker.", "Sizing was accurate for our whole team.", "Lightweight and easy to move in.", "Print alignment needs a closer check.", "Excellent quality for match day."][index] ?? "Good product.", date: new Date(now - (index + 1) * 86400000).toISOString(), status: rating >= 4 ? "Positive" : rating === 3 ? "Neutral" : "Needs attention" };
+//   });
+//   return { products: SEED_PRODUCTS, categories: SEED_CATEGORIES, customers, orders, payments, coupons, settings: DEFAULT_SETTINGS, showcase: [] as ShowcaseCustomer[], customDesignOptions: CUSTOM_DESIGN_OPTIONS, reviews };
+// }
+function makeSeed(_now: number) {
+  return {
+    products: [] as Product[],
+    categories: [] as CategoryRegistryItem[],
+    customers: [] as Customer[],
+    orders: [] as Order[],
+    payments: [] as Payment[],
+    coupons: [] as Coupon[],
+    settings: DEFAULT_SETTINGS,
+    showcase: [] as ShowcaseCustomer[],
+    customDesignOptions: [] as CustomDesignOption[],
+    reviews: [] as ProductReview[],
+  };
 }
 
 const AdminContext = createContext<AdminData | null>(null);
 const KEYS_TO_DATA = [KEYS.products, KEYS.categories, KEYS.customers, KEYS.orders, KEYS.payments, KEYS.coupons, KEYS.settings, KEYS.showcase, KEYS.customDesignOptions, KEYS.reviews] as const;
 
 export function AdminProvider({ children }: { children: ReactNode }) {
-  const [products, setProductsState] = useState<Product[]>(SEED_PRODUCTS);
-  const [categories, setCategoriesState] = useState<CategoryRegistryItem[]>(SEED_CATEGORIES);
-  const [customers, setCustomersState] = useState<Customer[]>([]);
-  const [orders, setOrdersState] = useState<Order[]>([]);
-  const [payments, setPaymentsState] = useState<Payment[]>([]);
-  const [coupons, setCouponsState] = useState<Coupon[]>([]);
-  const [settings, setSettingsState] = useState(DEFAULT_SETTINGS);
-  const [showcase, setShowcaseState] = useState<ShowcaseCustomer[]>([]);
-  const [customDesignOptions, setCustomDesignOptionsState] = useState(CUSTOM_DESIGN_OPTIONS);
-  const [reviews, setReviewsState] = useState<ProductReview[]>([]);
+ const [products, setProductsState] = useState<Product[]>([]);
+const [categories, setCategoriesState] = useState<CategoryRegistryItem[]>([]);
+const [customers, setCustomersState] = useState<Customer[]>([]);
+const [orders, setOrdersState] = useState<Order[]>([]);
+const [payments, setPaymentsState] = useState<Payment[]>([]);
+const [coupons, setCouponsState] = useState<Coupon[]>([]);
+const [settings, setSettingsState] = useState(DEFAULT_SETTINGS); // keep settings
+const [showcase, setShowcaseState] = useState<ShowcaseCustomer[]>([]);
+const [customDesignOptions, setCustomDesignOptionsState] = useState<CustomDesignOption[]>([]);
+const [reviews, setReviewsState] = useState<ProductReview[]>([]);
   const [ready, setReady] = useState(false);
 
-  const loadOrSeed = useCallback(async () => {
-    const seed = makeSeed(Date.now());
-    let productData = readStored(KEYS.products, seed.products);
-    let categoryData = readStored(KEYS.categories, seed.categories);
-    let customerData = readStored(KEYS.customers, seed.customers);
-    let orderData = readStored(KEYS.orders, seed.orders).filter((o: any) => !o.demo);
-    let paymentData = readStored(KEYS.payments, seed.payments).filter((p: any) => !p.demo);
-    let couponData = readStored(KEYS.coupons, seed.coupons);
-    let settingsData = readStored(KEYS.settings, seed.settings);
-    let showcaseData = readStored(KEYS.showcase, seed.showcase);
-    let designData = readStored(KEYS.customDesignOptions, seed.customDesignOptions);
-    let reviewData = readStored(KEYS.reviews, seed.reviews);
+  // const loadOrSeed = useCallback(async () => {
+  //   const seed = makeSeed(Date.now());
+  //   let productData = readStored(KEYS.products, seed.products);
+  //   let categoryData = readStored(KEYS.categories, seed.categories);
+  //   let customerData = readStored(KEYS.customers, seed.customers);
+  //   let orderData = readStored(KEYS.orders, seed.orders).filter((o: any) => !o.demo);
+  //   let paymentData = readStored(KEYS.payments, seed.payments).filter((p: any) => !p.demo);
+  //   let couponData = readStored(KEYS.coupons, seed.coupons);
+  //   let settingsData = readStored(KEYS.settings, seed.settings);
+  //   let showcaseData = readStored(KEYS.showcase, seed.showcase);
+  //   let designData = readStored(KEYS.customDesignOptions, seed.customDesignOptions);
+  //   let reviewData = readStored(KEYS.reviews, seed.reviews);
 
-    // Try live Neon Backend first (only if logged in with session token)
-    try {
-      const sessionStr = typeof window !== "undefined" ? window.localStorage.getItem(KEYS.session) : null;
-      const session = sessionStr ? JSON.parse(sessionStr) : null;
-      const token = session?.token;
+  //   // Try live Neon Backend first (only if logged in with session token)
+  //   try {
+  //     const sessionStr = typeof window !== "undefined" ? window.localStorage.getItem(KEYS.session) : null;
+  //     const session = sessionStr ? JSON.parse(sessionStr) : null;
+  //     const token = session?.token;
 
-      // Always load public storefront data
-      const [remoteCats, remoteProds, remoteDesign, remoteReviews] = await Promise.allSettled([
-        callBackendApi<CategoryRegistryItem[]>("storefront.listCategories"),
-        callBackendApi<{ products: Product[] } | Product[]>("storefront.listProducts", { pageSize: 100 }),
-        callBackendApi<CustomDesignOption[]>("storefront.listCustomDesignOptions"),
-        callBackendApi<ProductReview[]>("storefront.listProductReviews"),
-      ]);
+  //     // Always load public storefront data
+  //     const [remoteCats, remoteProds, remoteDesign, remoteReviews] = await Promise.allSettled([
+  //       callBackendApi<CategoryRegistryItem[]>("storefront.listCategories"),
+  //       callBackendApi<{ products: Product[] } | Product[]>("storefront.listProducts", { pageSize: 100 }),
+  //       callBackendApi<CustomDesignOption[]>("storefront.listCustomDesignOptions"),
+  //       callBackendApi<ProductReview[]>("storefront.listProductReviews"),
+  //     ]);
 
-      if (remoteCats.status === "fulfilled" && Array.isArray(remoteCats.value) && remoteCats.value.length > 0) {
-        categoryData = remoteCats.value;
-      }
-      if (remoteProds.status === "fulfilled" && remoteProds.value) {
-        const prodList = Array.isArray(remoteProds.value) ? remoteProds.value : (remoteProds.value as any).products;
-        if (Array.isArray(prodList) && prodList.length > 0) {
-          productData = prodList;
-        }
-      }
-      if (remoteDesign.status === "fulfilled" && Array.isArray(remoteDesign.value) && remoteDesign.value.length > 0) {
-        designData = remoteDesign.value;
-      }
-      if (remoteReviews.status === "fulfilled" && Array.isArray(remoteReviews.value) && remoteReviews.value.length > 0) {
-        reviewData = remoteReviews.value;
-      }
+  //     if (remoteCats.status === "fulfilled" && Array.isArray(remoteCats.value) && remoteCats.value.length > 0) {
+  //       categoryData = remoteCats.value;
+  //     }
+  //     if (remoteProds.status === "fulfilled" && remoteProds.value) {
+  //       const prodList = Array.isArray(remoteProds.value) ? remoteProds.value : (remoteProds.value as any).products;
+  //       if (Array.isArray(prodList) && prodList.length > 0) {
+  //         productData = prodList;
+  //       }
+  //     }
+  //     if (remoteDesign.status === "fulfilled" && Array.isArray(remoteDesign.value) && remoteDesign.value.length > 0) {
+  //       designData = remoteDesign.value;
+  //     }
+  //     if (remoteReviews.status === "fulfilled" && Array.isArray(remoteReviews.value) && remoteReviews.value.length > 0) {
+  //       reviewData = remoteReviews.value;
+  //     }
 
-      // Load authenticated admin data if session token exists
-      if (token) {
-        const [remoteCusts, remoteOrders, remotePayments, remoteCoupons, remoteSettings] = await Promise.allSettled([
-          callBackendApi<Customer[]>("admin.customers.list", undefined, token),
-          callBackendApi<Order[]>("admin.orders.list", undefined, token),
-          callBackendApi<Payment[]>("admin.payments.list", undefined, token),
-          callBackendApi<Coupon[]>("admin.coupons.list", undefined, token),
-          callBackendApi<AdminSettings>("admin.settings.get", undefined, token),
-        ]);
+  //     // Load authenticated admin data if session token exists
+  //     if (token) {
+  //       const [remoteCusts, remoteOrders, remotePayments, remoteCoupons, remoteSettings] = await Promise.allSettled([
+  //         callBackendApi<Customer[]>("admin.customers.list", undefined, token),
+  //         callBackendApi<Order[]>("admin.orders.list", undefined, token),
+  //         callBackendApi<Payment[]>("admin.payments.list", undefined, token),
+  //         callBackendApi<Coupon[]>("admin.coupons.list", undefined, token),
+  //         callBackendApi<AdminSettings>("admin.settings.get", undefined, token),
+  //       ]);
 
-        if (remoteCusts.status === "fulfilled" && Array.isArray(remoteCusts.value) && remoteCusts.value.length > 0) {
-          customerData = remoteCusts.value;
-        }
-        if (remoteOrders.status === "fulfilled" && remoteOrders.value) {
-          const list = Array.isArray(remoteOrders.value)
-            ? remoteOrders.value
-            : Array.isArray((remoteOrders.value as any).orders)
-            ? (remoteOrders.value as any).orders
-            : null;
-          if (list !== null) {
-            orderData = list;
-          }
-        }
-        if (remotePayments.status === "fulfilled" && Array.isArray(remotePayments.value) && remotePayments.value.length > 0) {
-          paymentData = remotePayments.value;
-        }
-        if (remoteCoupons.status === "fulfilled" && Array.isArray(remoteCoupons.value) && remoteCoupons.value.length > 0) {
-          couponData = remoteCoupons.value;
-        }
-        if (remoteSettings.status === "fulfilled" && remoteSettings.value) {
-          settingsData = remoteSettings.value;
-        }
-      }
-    } catch {
-      // Backend not running, continues with local storage fallback
-    }
+  //       if (remoteCusts.status === "fulfilled" && Array.isArray(remoteCusts.value) && remoteCusts.value.length > 0) {
+  //         customerData = remoteCusts.value;
+  //       }
+  //       if (remoteOrders.status === "fulfilled" && remoteOrders.value) {
+  //         const list = Array.isArray(remoteOrders.value)
+  //           ? remoteOrders.value
+  //           : Array.isArray((remoteOrders.value as any).orders)
+  //           ? (remoteOrders.value as any).orders
+  //           : null;
+  //         if (list !== null) {
+  //           orderData = list;
+  //         }
+  //       }
+  //       if (remotePayments.status === "fulfilled" && Array.isArray(remotePayments.value) && remotePayments.value.length > 0) {
+  //         paymentData = remotePayments.value;
+  //       }
+  //       if (remoteCoupons.status === "fulfilled" && Array.isArray(remoteCoupons.value) && remoteCoupons.value.length > 0) {
+  //         couponData = remoteCoupons.value;
+  //       }
+  //       if (remoteSettings.status === "fulfilled" && remoteSettings.value) {
+  //         settingsData = remoteSettings.value;
+  //       }
+  //     }
+  //   } catch {
+  //     // Backend not running, continues with local storage fallback
+  //   }
 
-    const safeCategories = categoryData.length > 0 ? categoryData : seed.categories;
-    const normalizedProducts = productData.filter((product) => product.section !== "Custom Your Design").map((product) => {
-      const normalized = { ...product, overview: product.overview ?? "", washCare: product.washCare ?? "", designGuidelines: product.designGuidelines ?? "", active: product.active ?? true };
-      if (normalized.section === "Custom Team Jersey" && normalized.category !== "custom-team-jersey") {
-        return { ...normalized, category: "custom-team-jersey", subCategory: normalized.subCategory ?? product.category };
-      }
-      return normalized;
-    });
+  //   const safeCategories = categoryData.length > 0 ? categoryData : seed.categories;
+  //   const normalizedProducts = productData.filter((product) => product.section !== "Custom Your Design").map((product) => {
+  //     const normalized = { ...product, overview: product.overview ?? "", washCare: product.washCare ?? "", designGuidelines: product.designGuidelines ?? "", active: product.active ?? true };
+  //     if (normalized.section === "Custom Team Jersey" && normalized.category !== "custom-team-jersey") {
+  //       return { ...normalized, category: "custom-team-jersey", subCategory: normalized.subCategory ?? product.category };
+  //     }
+  //     return normalized;
+  //   });
 
-    if (typeof window !== "undefined") {
-      writeStored(KEYS.products, normalizedProducts);
-      writeStored(KEYS.categories, safeCategories);
-      writeStored(KEYS.customers, customerData);
-      writeStored(KEYS.orders, orderData);
-      writeStored(KEYS.payments, paymentData);
-      writeStored(KEYS.coupons, couponData);
-      writeStored(KEYS.settings, settingsData);
-      writeStored(KEYS.customDesignOptions, designData);
-      writeStored(KEYS.reviews, reviewData);
-    }
+  //   if (typeof window !== "undefined") {
+  //     writeStored(KEYS.products, normalizedProducts);
+  //     writeStored(KEYS.categories, safeCategories);
+  //     writeStored(KEYS.customers, customerData);
+  //     writeStored(KEYS.orders, orderData);
+  //     writeStored(KEYS.payments, paymentData);
+  //     writeStored(KEYS.coupons, couponData);
+  //     writeStored(KEYS.settings, settingsData);
+  //     writeStored(KEYS.customDesignOptions, designData);
+  //     writeStored(KEYS.reviews, reviewData);
+  //   }
 
-    setProductsState(normalizedProducts);
-    setCategoriesState(safeCategories);
-    setCustomersState(customerData);
-    setOrdersState(orderData);
-    setPaymentsState(paymentData);
-    setCouponsState(couponData);
-    setSettingsState({ ...DEFAULT_SETTINGS, ...settingsData });
-    setShowcaseState(showcaseData);
-    setCustomDesignOptionsState(designData);
-    setReviewsState(reviewData);
-    setReady(true);
-  }, []);
+  //   setProductsState(normalizedProducts);
+  //   setCategoriesState(safeCategories);
+  //   setCustomersState(customerData);
+  //   setOrdersState(orderData);
+  //   setPaymentsState(paymentData);
+  //   setCouponsState(couponData);
+  //   setSettingsState({ ...DEFAULT_SETTINGS, ...settingsData });
+  //   setShowcaseState(showcaseData);
+  //   setCustomDesignOptionsState(designData);
+  //   setReviewsState(reviewData);
+  //   setReady(true);
+  // }, []);
+
+  const loadOrSeed = useCallback(() => {
+  const empty = makeSeed(Date.now()); // now returns empties if you did Step 2
+
+  const productData = readStored(KEYS.products, [] as Product[]);
+  const categoryData = readStored(KEYS.categories, [] as CategoryRegistryItem[]);
+  const customerData = readStored(KEYS.customers, [] as Customer[]);
+  const orderData = readStored(KEYS.orders, [] as Order[]);
+  const paymentData = readStored(KEYS.payments, [] as Payment[]);
+  const couponData = readStored(KEYS.coupons, [] as Coupon[]);
+  const settingsData = readStored(KEYS.settings, DEFAULT_SETTINGS);
+  const showcaseData = readStored(KEYS.showcase, [] as ShowcaseCustomer[]);
+  const designData = readStored(KEYS.customDesignOptions, [] as CustomDesignOption[]);
+  const reviewData = readStored(KEYS.reviews, [] as ProductReview[]);
+
+  // Do NOT write seed when storage is empty.
+  // Later: replace this block with API fetches (SWAP POINT comments).
+
+  const normalizedProducts = productData
+    .filter((product) => product.section !== "Custom Your Design")
+    .map((product) => ({
+      ...product,
+      overview: product.overview ?? "",
+      washCare: product.washCare ?? "",
+      designGuidelines: product.designGuidelines ?? "",
+      active: product.active ?? true,
+    }));
+
+  setProductsState(normalizedProducts);
+  setCategoriesState(categoryData);
+  setCustomersState(customerData);
+  setOrdersState(orderData);
+  setPaymentsState(paymentData);
+  setCouponsState(couponData);
+  setSettingsState({ ...DEFAULT_SETTINGS, ...settingsData });
+  setShowcaseState(showcaseData);
+  setCustomDesignOptionsState(designData);
+  setReviewsState(reviewData);
+  setReady(true);
+}, []);
 
   useEffect(() => { void loadOrSeed(); }, [loadOrSeed]);
 
@@ -325,9 +379,12 @@ export function AdminProvider({ children }: { children: ReactNode }) {
 
   // Sync Settings to Database
   const setSettings = useCallback((data: AdminSettings) => {
-    update(KEYS.settings, setSettingsState, data);
-    void callBackendApi("admin.settings.update", data).catch(() => {});
-  }, [update]);
+  update(KEYS.settings, setSettingsState, data);
+  // Save to DB
+  void callBackendApi("admin.saveSettings", { settings: data }).catch((err) => {
+    console.warn("Could not save settings to backend:", err);
+  });
+}, [update]);
 
   // Sync Showcase (Create / Delete) to Database
   const setShowcase = useCallback((data: ShowcaseCustomer[]) => {

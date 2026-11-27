@@ -182,7 +182,7 @@ export function AdminLogin() {
 
 export function ProductEditor({ product, initialDraft, onSave, onClose }: { product?: Product | undefined; initialDraft?: Product | undefined; onSave: (product: Product) => void; onClose: () => void }) {
   const { categories } = useAdmin();
-  const [draft, setDraft] = useState<Product>(() => product ?? initialDraft ?? { id: `product-${Date.now()}`, code: "", name: "", family: "customisable", section: "Custom Team Jersey", category: "custom-team-jersey", subCategory: "all-over-print", price: 699, mrp: 999, material: "Dry-fit polyester", description: "", overview: "", washCare: "", designGuidelines: "", images: [], rating: 4.5, isExclusiveTopWear: false, active: true });
+  const [draft, setDraft] = useState<Product>(() => product ?? initialDraft ?? { id: `product-${Date.now()}`, code: "", name: "", family: "customisable", section: "Custom Team Jersey", category: "custom-team-jersey", subCategory: "all-over-print", price: 699, mrp: 999, material: "Dry-fit polyester", description: "", overview: "", washCare: "", designGuidelines: "", images: [], rating: 0, isExclusiveTopWear: false, active: true });
   const selected = categories.find((category) => category.slug === draft.category);
   const availableSubs = selected?.subcategories ?? [];
   const readymade = draft.family === "readymade";
