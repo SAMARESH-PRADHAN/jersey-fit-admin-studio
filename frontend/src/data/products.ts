@@ -1,9 +1,9 @@
 import type { CategoryRegistryItem, CustomDesignOption, DiscountTier, Product } from "@/types";
 
 export const CUSTOM_DESIGN_OPTIONS: CustomDesignOption[] = [
-  { id: "front-printed-jersey", name: "Front Printed Jersey", price: 599, description: "Your artwork printed on the front of the jersey." },
-  { id: "front-back-printed-jersey", name: "Front & Back Printed Jersey", price: 749, description: "Custom artwork printed on both sides." },
-  { id: "all-over-print-jersey", name: "All Over Print Jersey", price: 899, description: "Full-coverage custom jersey design." },
+  // { id: "front-printed-jersey", name: "Front Printed Jersey", price: 599, description: "Your artwork printed on the front of the jersey." },
+  // { id: "front-back-printed-jersey", name: "Front & Back Printed Jersey", price: 749, description: "Custom artwork printed on both sides." },
+  // { id: "all-over-print-jersey", name: "All Over Print Jersey", price: 899, description: "Full-coverage custom jersey design." },
 ];
 
 export const DEFAULT_DISCOUNT_TIERS: DiscountTier[] = [
@@ -16,59 +16,59 @@ export const DEFAULT_DISCOUNT_TIERS: DiscountTier[] = [
 const subcategories = (entries: Array<[string, string]>) => entries.map(([slug, label]) => ({ slug, label }));
 
 export const SEED_CATEGORIES: CategoryRegistryItem[] = [
-  {
-    slug: "custom-team-jersey",
-    label: "Custom Team Jersey",
-    image: "",
-    description: "Custom jerseys for clubs, teams, and events.",
-    family: "customisable",
-    type: "custom",
-    section: "Custom Team Jersey",
-    subcategories: subcategories([
-      ["all-over-print", "All Over Printed Jersey"], ["front-print", "Front Printed Jersey"], ["back-print", "Back Printed Jersey"],
-      ["cricket", "Cricket Jersey"], ["football", "Football Jersey"], ["volleyball", "Volleyball Jersey"], ["basketball", "Basketball Jersey"],
-      ["kabaddi", "Kabaddi Jersey"], ["ganesh-puja", "Ganesh Puja Jersey"], ["morning-walk", "Morning Walk Group"], ["marathon", "Marathon"],
-    ]),
-  },
-  {
-    slug: "custom-premium",
-    label: "Custom Premium Collection",
-    image: "",
-    description: "Premium custom jerseys",
-    family: "customisable",
-    type: "premium",
-    section: "Custom Premium Collection",
-    subcategories: [],
-  },
-  {
-    slug: "top-wear",
-    label: "Sports Top Wear",
-    image: "",
-    description: "Ready-to-wear sports tops",
-    family: "readymade",
-    type: "readymade",
-    section: "Sports Top Wear",
-    subcategories: [
-      { slug: "all-sports-top-wear", label: "All Sports Top Wear" },
-      { slug: "round-neck", label: "Round Neck T-shirt" },
-      { slug: "polo-neck", label: "Polo Neck T-shirt" },
-    ],
-  },
-  {
-    slug: "winter-top-wear",
-    label: "Winter Sports Wear",
-    image: "",
-    description: "Warm sportswear essentials",
-    family: "readymade",
-    type: "readymade",
-    section: "Winter Sports Wear",
-    subcategories: [
-      { slug: "all-winter-sports-wear", label: "All Winter Sports Wear" },
-      { slug: "hoodie", label: "Premium Hoodies" },
-      { slug: "sweatshirt", label: "Sweatshirt" },
-      { slug: "oversized-tshirt", label: "Oversized T-shirts" },
-    ],
-  },
+  // {
+  //   slug: "custom-team-jersey",
+  //   label: "Custom Team Jersey",
+  //   image: "",
+  //   description: "Custom jerseys for clubs, teams, and events.",
+  //   family: "customisable",
+  //   type: "custom",
+  //   section: "Custom Team Jersey",
+  //   subcategories: subcategories([
+  //     ["all-over-print", "All Over Printed Jersey"], ["front-print", "Front Printed Jersey"], ["back-print", "Back Printed Jersey"],
+  //     ["cricket", "Cricket Jersey"], ["football", "Football Jersey"], ["volleyball", "Volleyball Jersey"], ["basketball", "Basketball Jersey"],
+  //     ["kabaddi", "Kabaddi Jersey"], ["ganesh-puja", "Ganesh Puja Jersey"], ["morning-walk", "Morning Walk Group"], ["marathon", "Marathon"],
+  //   ]),
+  // },
+  // {
+  //   slug: "custom-premium",
+  //   label: "Custom Premium Collection",
+  //   image: "",
+  //   description: "Premium custom jerseys",
+  //   family: "customisable",
+  //   type: "premium",
+  //   section: "Custom Premium Collection",
+  //   subcategories: [],
+  // },
+  // {
+  //   slug: "top-wear",
+  //   label: "Sports Top Wear",
+  //   image: "",
+  //   description: "Ready-to-wear sports tops",
+  //   family: "readymade",
+  //   type: "readymade",
+  //   section: "Sports Top Wear",
+  //   subcategories: [
+  //     { slug: "all-sports-top-wear", label: "All Sports Top Wear" },
+  //     { slug: "round-neck", label: "Round Neck T-shirt" },
+  //     { slug: "polo-neck", label: "Polo Neck T-shirt" },
+  //   ],
+  // },
+  // {
+  //   slug: "winter-top-wear",
+  //   label: "Winter Sports Wear",
+  //   image: "",
+  //   description: "Warm sportswear essentials",
+  //   family: "readymade",
+  //   type: "readymade",
+  //   section: "Winter Sports Wear",
+  //   subcategories: [
+  //     { slug: "all-winter-sports-wear", label: "All Winter Sports Wear" },
+  //     { slug: "hoodie", label: "Premium Hoodies" },
+  //     { slug: "sweatshirt", label: "Sweatshirt" },
+  //     { slug: "oversized-tshirt", label: "Oversized T-shirts" },
+  //   ],
+  // },
 ];
 
 const seedRows: Array<[string, string, string, string | undefined, number, number, string]> = [

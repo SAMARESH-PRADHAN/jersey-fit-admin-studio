@@ -2,18 +2,24 @@ import { CUSTOM_DESIGN_OPTIONS, DEFAULT_DISCOUNT_TIERS, SEED_CATEGORIES, SEED_PR
 import { KEYS, readStored } from "@/lib/storage";
 import type { CategoryRegistryItem, Coupon, PricingConfig, Product, ProductFamily, ShowcaseCustomer } from "@/types";
 
+// export function getProducts(): Product[] {
+//   return readStored(KEYS.products, SEED_PRODUCTS);
+// }
 export function getProducts(): Product[] {
-  return readStored(KEYS.products, SEED_PRODUCTS);
+  return readStored(KEYS.products, []);
 }
 
 export function getProduct(id: string): Product | undefined {
   return getProducts().find((product) => product.id === id);
 }
 
-export function getCategories(): CategoryRegistryItem[] {
-  return readStored(KEYS.categories, SEED_CATEGORIES);
-}
+// export function getCategories(): CategoryRegistryItem[] {
+//   return readStored(KEYS.categories, SEED_CATEGORIES);
+// }
 
+export function getCategories(): CategoryRegistryItem[] {
+  return readStored(KEYS.categories, []);
+}
 const DEFAULT_RULES: Record<ProductFamily, PricingConfig> = {
   customisable: {
     family: "customisable", moq: 5, maxQty: null, discountTiers: DEFAULT_DISCOUNT_TIERS,
@@ -44,9 +50,9 @@ export function resolvePricingConfig(product: Pick<Product, "family" | "category
 
 export function getCoupons(): Coupon[] {
   return readStored(KEYS.coupons, [
-    { code: "JERSEY100", label: "Save ₹100", amount: 100, discountType: "flat", minimumSubtotal: 0, active: true, startsAt: "2026-01-01", expiresAt: "2027-12-31", usageLimit: null, usageCount: 0 },
-    { code: "FIT200", label: "₹200 off above ₹2,000", amount: 200, discountType: "flat", minimumSubtotal: 2000, active: true, startsAt: "2026-01-01", expiresAt: "2027-12-31", usageLimit: null, usageCount: 0 },
-    { code: "SQUAD500", label: "₹500 off above ₹6,000", amount: 500, discountType: "flat", minimumSubtotal: 6000, active: true, startsAt: "2026-01-01", expiresAt: "2027-12-31", usageLimit: null, usageCount: 0 },
+    // { code: "JERSEY100", label: "Save ₹100", amount: 100, discountType: "flat", minimumSubtotal: 0, active: true, startsAt: "2026-01-01", expiresAt: "2027-12-31", usageLimit: null, usageCount: 0 },
+    // { code: "FIT200", label: "₹200 off above ₹2,000", amount: 200, discountType: "flat", minimumSubtotal: 2000, active: true, startsAt: "2026-01-01", expiresAt: "2027-12-31", usageLimit: null, usageCount: 0 },
+    // { code: "SQUAD500", label: "₹500 off above ₹6,000", amount: 500, discountType: "flat", minimumSubtotal: 6000, active: true, startsAt: "2026-01-01", expiresAt: "2027-12-31", usageLimit: null, usageCount: 0 },
   ]);
 }
 
@@ -58,8 +64,11 @@ export function getShowcaseCustomers(): ShowcaseCustomer[] {
   return readStored(KEYS.showcase, []);
 }
 
+// export function getCustomDesignOptions() {
+//   return readStored(KEYS.customDesignOptions, CUSTOM_DESIGN_OPTIONS);
+// }
 export function getCustomDesignOptions() {
-  return readStored(KEYS.customDesignOptions, CUSTOM_DESIGN_OPTIONS);
+  return readStored(KEYS.customDesignOptions, []);
 }
 
 export function familyForCategory(slug: string): ProductFamily | undefined {
