@@ -11,15 +11,6 @@ export class CouponService {
 
   static async create(input: z.infer<typeof couponInputSchema>) {
     const code = input.code.trim().toUpperCase();
-    const existing = await db
-      .select({ code: coupons.code })
-      .from(coupons)
-      .where(eq(coupons.code, code))
-      .limit(1);
-
-    if (existing.length > 0) {
-      throw new Error(`Coupon with code "${code}" already exists.`);
-    }
 
     const [coupon] = await db
       .insert(coupons)
@@ -34,6 +25,20 @@ export class CouponService {
         expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
         usageLimit: input.usageLimit ?? null,
         usageCount: 0,
+      })
+      .onConflictDoUpdate({
+        target: coupons.code,
+        set: {
+          label: input.label,
+          amount: input.amount,
+          discountType: input.discountType,
+          minimumSubtotal: input.minimumSubtotal,
+          active: input.active,
+          startsAt: new Date(input.startsAt),
+          expiresAt: input.expiresAt ? new Date(input.expiresAt) : null,
+          usageLimit: input.usageLimit ?? null,
+          updatedAt: new Date(),
+        },
       })
       .returning();
 

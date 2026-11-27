@@ -163,13 +163,13 @@ export function AdminLogin() {
         signedInAt: new Date().toISOString(),
       });
       toast.success("Welcome to Jersey Fit Admin");
-      void navigate({ to: "/admin" });
+      window.location.href = "/admin";
     } catch (err: any) {
       // Fallback for local demo mode if backend is unreachable
       if (email.trim().toLowerCase() === "admin@jerseyfit.in" && password === "admin123") {
         writeStored(KEYS.session, { email, signedInAt: new Date().toISOString() });
         toast.success("Welcome to Jersey Fit Admin (Offline)");
-        void navigate({ to: "/admin" });
+        window.location.href = "/admin";
       } else {
         setError(err.message || "Email or password is incorrect.");
       }

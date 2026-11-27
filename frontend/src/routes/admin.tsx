@@ -11,9 +11,16 @@ export const Route = createFileRoute("/admin")({
 });
 
 function AdminRouteLayout() {
-  const [session, setSession] = useState<boolean | null>(null);
+  const [session, setSession] = useState<boolean | null>(() => {
+    if (typeof window !== "undefined") {
+      return Boolean(window.localStorage.getItem(KEYS.session));
+    }
+    return null;
+  });
   const pathname = useRouterState({ select: (state) => state.location.pathname });
-  useEffect(() => { setSession(Boolean(window.localStorage.getItem(KEYS.session))); }, [pathname]);
+  useEffect(() => {
+    setSession(Boolean(window.localStorage.getItem(KEYS.session)));
+  }, [pathname]);
   const isLogin = pathname === "/admin/login";
   if (isLogin) return <AdminProvider><Toaster theme="dark" position="top-right" /><Outlet /></AdminProvider>;
   if (session === false) return <Navigate to="/admin/login" />;

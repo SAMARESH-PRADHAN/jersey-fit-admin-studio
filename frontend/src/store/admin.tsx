@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { CUSTOM_DESIGN_OPTIONS, DEFAULT_DISCOUNT_TIERS, SEED_CATEGORIES, SEED_PRODUCTS } from "@/data/products";
 import { KEYS, readStored, removeStored, writeStored } from "@/lib/storage";
 import { callBackendApi } from "@/lib/api-client";
@@ -291,30 +291,37 @@ export function AdminProvider({ children }: { children: ReactNode }) {
   }, [update]);
 
   // Sync Coupons (Create / Update / Toggle / Delete) to Database
+  const pendingCouponSync = useRef<Set<string>>(new Set());
+
   const setCoupons = useCallback((data: Coupon[]) => {
-    setCouponsState((current) => {
-      const currentCodes = new Set(data.map((c) => c.code));
-      const deleted = current.filter((c) => !currentCodes.has(c.code));
-      for (const d of deleted) {
-        void callBackendApi("admin.coupons.delete", { code: d.code }).catch(() => {});
-      }
+    const currentList = coupons;
+    const currentCodes = new Set(data.map((c) => c.code));
+    const deleted = currentList.filter((c) => !currentCodes.has(c.code));
+    for (const d of deleted) {
+      void callBackendApi("admin.coupons.delete", { code: d.code }).catch(() => {});
+    }
 
-      const oldMap = new Map(current.map((c) => [c.code, c]));
-      for (const item of data) {
-        const existing = oldMap.get(item.code);
-        if (!existing) {
-          void callBackendApi("admin.coupons.create", item).catch(() => {});
-        } else if (existing.active !== item.active) {
-          void callBackendApi("admin.coupons.toggleActive", { code: item.code, active: item.active }).catch(() => {});
-        } else if (JSON.stringify(existing) !== JSON.stringify(item)) {
-          void callBackendApi("admin.coupons.update", { code: item.code, data: item }).catch(() => {});
+    const oldMap = new Map(currentList.map((c) => [c.code, c]));
+    for (const item of data) {
+      const existing = oldMap.get(item.code);
+      if (!existing) {
+        if (!pendingCouponSync.current.has(item.code)) {
+          pendingCouponSync.current.add(item.code);
+          void callBackendApi("admin.coupons.create", item)
+            .finally(() => {
+              pendingCouponSync.current.delete(item.code);
+            });
         }
+      } else if (existing.active !== item.active) {
+        void callBackendApi("admin.coupons.toggleActive", { code: item.code, active: item.active }).catch(() => {});
+      } else if (JSON.stringify(existing) !== JSON.stringify(item)) {
+        void callBackendApi("admin.coupons.update", { code: item.code, data: item }).catch(() => {});
       }
+    }
 
-      writeStored(KEYS.coupons, data);
-      return data;
-    });
-  }, []);
+    setCouponsState(data);
+    writeStored(KEYS.coupons, data);
+  }, [coupons]);
 
   // Sync Settings to Database
   const setSettings = useCallback((data: AdminSettings) => {
