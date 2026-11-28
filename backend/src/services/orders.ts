@@ -12,6 +12,7 @@ import { coupons } from "../db/schema/rules.js";
 import { PricingEngine } from "./pricing.js";
 import type { createOrderInputSchema } from "../validators/index.js";
 import type { z } from "zod";
+import { productImages } from "../db/schema/catalog.js";
 
 const STATUS_FLOW: OrderStatus[] = [
   "Placed",
@@ -265,7 +266,11 @@ export class OrderService {
 
     const allItems = await db.select().from(orderItems);
     const allHistory = await db.select().from(orderStatusHistory);
-
+const allImages = await db.select().from(productImages);
+const imageByProduct = new Map<string, string>();
+for (const img of allImages.sort((a, b) => a.sortOrder - b.sortOrder)) {
+  if (!imageByProduct.has(img.productId)) imageByProduct.set(img.productId, img.url);
+}
     const itemsMap = new Map<string, typeof allItems>();
     for (const item of allItems) {
       if (!itemsMap.has(item.orderId)) itemsMap.set(item.orderId, []);
@@ -279,10 +284,13 @@ export class OrderService {
     }
 
     return customerOrders.map((ord) => ({
-      ...ord,
-      items: itemsMap.get(ord.id) ?? [],
-      statusHistory: historyMap.get(ord.id) ?? [],
-    }));
+  ...ord,
+  items: (itemsMap.get(ord.id) ?? []).map((it) => ({
+    ...it,
+    image: it.productId ? (imageByProduct.get(it.productId) ?? null) : null,
+  })),
+  statusHistory: historyMap.get(ord.id) ?? [],
+}));
   }
 
   static async listOrders(filter?: {

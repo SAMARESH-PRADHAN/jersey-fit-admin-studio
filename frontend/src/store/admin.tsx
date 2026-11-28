@@ -73,7 +73,28 @@ function makeSeed(now: number) {
 
 const AdminContext = createContext<AdminData | null>(null);
 const KEYS_TO_DATA = [KEYS.products, KEYS.categories, KEYS.customers, KEYS.orders, KEYS.payments, KEYS.coupons, KEYS.settings, KEYS.showcase, KEYS.customDesignOptions, KEYS.reviews] as const;
-
+function mapOrder(o: any): Order {
+  return {
+    ...o,
+    createdAt: new Date(o.createdAt).toISOString(),
+    updatedAt: new Date(o.updatedAt ?? o.createdAt).toISOString(),
+    coupon: o.coupon ?? undefined,
+    items: (o.items ?? []).map((i: any) => ({
+      ...i,
+      subCategory: i.subCategory ?? undefined,
+      logoDataUrl: i.logoDataUrl ?? i.logoFileUrl ?? undefined,
+      rosterFile: i.rosterFileName
+        ? { name: i.rosterFileName, mime: "", dataUrl: i.rosterFileUrl ?? "" }
+        : undefined,
+      discountPct: Number(i.discountPct ?? 0),
+    })),
+    statusHistory: (o.statusHistory ?? []).map((h: any) => ({
+      status: h.status,
+      date: new Date(h.date).toISOString(),
+      ...(h.note ? { note: h.note } : {}),
+    })),
+  } as Order;
+}
 export function AdminProvider({ children }: { children: ReactNode }) {
   const [products, setProductsState] = useState<Product[]>(SEED_PRODUCTS);
   const [categories, setCategoriesState] = useState<CategoryRegistryItem[]>(SEED_CATEGORIES);
@@ -261,6 +282,44 @@ export function AdminProvider({ children }: { children: ReactNode }) {
     setReviewsState(reviewData);
     setReady(true);
   }, []);
+const syncLive = useCallback(async () => {
+  const [o, c, p, cp, pr, rv] = await Promise.allSettled([
+    callBackendApi<any>("admin.orders.list", { pageSize: 1000 }),
+    callBackendApi<Customer[]>("admin.customers.list"),
+    callBackendApi<Payment[]>("admin.payments.list"),
+    callBackendApi<Coupon[]>("admin.coupons.list"),
+    callBackendApi<any>("admin.products.list", { pageSize: 1000 }),
+    callBackendApi<ProductReview[]>("storefront.listProductReviews"),
+  ]);
+  if (o.status === "fulfilled" && Array.isArray(o.value?.orders)) {
+    const mapped = o.value.orders.map(mapOrder);
+    setOrdersState(mapped);
+    writeStored(KEYS.orders, mapped);
+  }
+  if (c.status === "fulfilled" && Array.isArray(c.value)) {
+    setCustomersState(c.value); writeStored(KEYS.customers, c.value);
+  }
+  if (p.status === "fulfilled" && Array.isArray(p.value)) {
+    setPaymentsState(p.value); writeStored(KEYS.payments, p.value);
+  }
+  if (cp.status === "fulfilled" && Array.isArray(cp.value)) {
+    setCouponsState(cp.value); writeStored(KEYS.coupons, cp.value);
+  }
+  if (pr.status === "fulfilled" && Array.isArray(pr.value?.products)) {
+    // use the *State setter on purpose: setProducts would re-send create/update calls
+    setProductsState(pr.value.products); writeStored(KEYS.products, pr.value.products);
+  }
+  if (rv.status === "fulfilled" && Array.isArray(rv.value)) {
+    setReviewsState(rv.value); writeStored(KEYS.reviews, rv.value);
+  }
+}, []);
+
+useEffect(() => {
+  if (!ready) return;
+  void syncLive();
+  const t = setInterval(() => void syncLive(), 10000);
+  return () => clearInterval(t);
+}, [ready, syncLive]);
 
   useEffect(() => { void loadOrSeed(); }, [loadOrSeed]);
 

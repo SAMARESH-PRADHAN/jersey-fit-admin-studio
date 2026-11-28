@@ -6,6 +6,7 @@ import {
   showcaseCustomers,
   storeSettings,
 } from "../db/schema/settings.js";
+import { products } from "../db/schema/catalog.js";
 
 export class SettingsService {
   static async getSettings() {
@@ -35,10 +36,14 @@ export class SettingsService {
     const updatePayload: Record<string, unknown> = {
       updatedAt: new Date(),
     };
-    if (input.storeName !== undefined) updatePayload.storeName = input.storeName;
-    if (input.supportEmail !== undefined) updatePayload.supportEmail = input.supportEmail;
-    if (input.supportPhone !== undefined) updatePayload.supportPhone = input.supportPhone;
-    if (input.gstRate !== undefined) updatePayload.gstRate = String(input.gstRate);
+    if (input.storeName !== undefined)
+      updatePayload.storeName = input.storeName;
+    if (input.supportEmail !== undefined)
+      updatePayload.supportEmail = input.supportEmail;
+    if (input.supportPhone !== undefined)
+      updatePayload.supportPhone = input.supportPhone;
+    if (input.gstRate !== undefined)
+      updatePayload.gstRate = String(input.gstRate);
 
     await db
       .insert(storeSettings)
@@ -70,7 +75,8 @@ export class SettingsService {
       updatedAt: new Date(),
     };
     if (input.price !== undefined) updatePayload.price = input.price;
-    if (input.description !== undefined) updatePayload.description = input.description;
+    if (input.description !== undefined)
+      updatePayload.description = input.description;
 
     const [option] = await db
       .update(customDesignOptions)
@@ -88,33 +94,80 @@ export class SettingsService {
     return all.filter((r) => r.productId === productId);
   }
 
+  // static async createReview(input: {
+  //   productId: string;
+  //   productName: string;
+  //   customerName: string;
+  //   rating: number;
+  //   text: string;
+  // }) {
+  //   const status: "Positive" | "Neutral" | "Needs attention" =
+  //     input.rating >= 4
+  //       ? "Positive"
+  //       : input.rating === 3
+  //         ? "Neutral"
+  //         : "Needs attention";
+
+  //   const id = `review-${Date.now()}`;
+  //   const [review] = await db
+  //     .insert(productReviews)
+  //     .values({
+  //       id,
+  //       productId: input.productId,
+  //       productName: input.productName,
+  //       customerName: input.customerName,
+  //       rating: input.rating,
+  //       text: input.text,
+  //       status,
+  //       date: new Date(),
+  //     })
+  //     .returning();
+
+  //   return review;
+  // }
   static async createReview(input: {
-    productId: string;
-    productName: string;
-    customerName: string;
-    rating: number;
-    text: string;
-  }) {
-    const status: "Positive" | "Neutral" | "Needs attention" =
-      input.rating >= 4 ? "Positive" : input.rating === 3 ? "Neutral" : "Needs attention";
+  productId: string;
+  productName?: string;
+  customerName: string;
+  rating: number;
+  text?: string;
+  reviewText?: string;
+}) {
+  const text = (input.text ?? input.reviewText ?? "").trim();
+  const rating = Math.round(Number(input.rating));
+  if (!input.productId) throw new Error("Product is required");
+  if (!(rating >= 1 && rating <= 5)) throw new Error("Rating must be 1 to 5");
+  if (text.length < 3) throw new Error("Review text is required");
 
-    const id = `review-${Date.now()}`;
-    const [review] = await db
-      .insert(productReviews)
-      .values({
-        id,
-        productId: input.productId,
-        productName: input.productName,
-        customerName: input.customerName,
-        rating: input.rating,
-        text: input.text,
-        status,
-        date: new Date(),
-      })
-      .returning();
-
-    return review;
+  let productName = input.productName;
+  if (!productName) {
+    const [p] = await db
+      .select({ name: products.name })
+      .from(products)
+      .where(eq(products.id, input.productId))
+      .limit(1);
+    if (!p) throw new Error("Product not found");
+    productName = p.name;
   }
+
+  const status: "Positive" | "Neutral" | "Needs attention" =
+    rating >= 4 ? "Positive" : rating === 3 ? "Neutral" : "Needs attention";
+
+  const [review] = await db
+    .insert(productReviews)
+    .values({
+      id: `review-${Date.now()}`,
+      productId: input.productId,
+      productName,
+      customerName: input.customerName || "Customer",
+      rating,
+      text,
+      status,
+      date: new Date(),
+    })
+    .returning();
+  return review;
+}
 
   static async deleteReview(id: string) {
     await db.delete(productReviews).where(eq(productReviews.id, id));
