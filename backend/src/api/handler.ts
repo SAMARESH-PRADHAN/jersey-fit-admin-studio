@@ -241,6 +241,10 @@ export class ApiHandler {
         return res;
       }
 
+            case "admin.rules.list":
+        requireAdmin();
+        return await RulesService.listRules();
+        
       // --- Admin Coupons ---
       case "admin.coupons.list":
         requireAdmin();
@@ -450,6 +454,9 @@ export class ApiHandler {
         });
         return res;
       }
+case "admin.rules.list":
+  requireAdmin();
+  return await RulesService.listRules();
 
       default:
         throw new Error(`Unknown action: ${action}`);

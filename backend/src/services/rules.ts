@@ -146,6 +146,9 @@ export class RulesService {
     return res;
   }
 
+    static async listRules() {
+    return await db.select().from(pricingRules);
+  }
   static async saveRule(params: {
     scope: "global" | "category" | "subcategory";
     family: "customisable" | "readymade";
